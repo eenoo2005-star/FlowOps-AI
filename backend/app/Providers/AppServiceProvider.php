@@ -22,18 +22,40 @@ class AppServiceProvider extends ServiceProvider
                 trim((string) $request->input('email'))
             );
 
+            $emailHash = hash('sha256', $email);
+            $ipAddress = (string) $request->ip();
+
+            $tooManyAttemptsResponse = static function (
+                Request $request,
+                array $headers
+            ) {
+                return response()->json(
+                    [
+                        'message' => 'Too many login attempts. Please try again later.',
+                        'retry_after' => (int) ($headers['Retry-After'] ?? 60),
+                    ],
+                    429,
+                    $headers
+                );
+            };
+
             return [
-                // يمنع التكرار على نفس الحساب من نفس المصدر.
                 Limit::perMinute(5)
-                    ->by('login-email-ip:'.$email.'|'.$request->ip()),
+                    ->by(
+                        'login-email-ip-minute:'
+                        .$emailHash
+                        .'|'
+                        .$ipAddress
+                    )
+                    ->response($tooManyAttemptsResponse),
 
-                // يمنع عنوان IP من تجربة حسابات كثيرة.
                 Limit::perMinute(20)
-                    ->by('login-ip-minute:'.$request->ip()),
+                    ->by('login-ip-minute:'.$ipAddress)
+                    ->response($tooManyAttemptsResponse),
 
-                // يمنع الهجوم البطيء المستمر.
                 Limit::perHour(100)
-                    ->by('login-ip-hour:'.$request->ip()),
+                    ->by('login-ip-hour:'.$ipAddress)
+                    ->response($tooManyAttemptsResponse),
             ];
         });
     }
