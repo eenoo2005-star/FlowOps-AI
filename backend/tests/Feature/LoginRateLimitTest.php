@@ -22,21 +22,10 @@ class LoginRateLimitTest extends TestCase
                 ->assertStatus(422);
         }
 
-        $response = $this->postJson('/api/login', $payload);
-
-        $response
+        $this->postJson('/api/login', $payload)
             ->assertStatus(429)
-            ->assertJson([
-                'message' => 'Too many login attempts. Please try again later.',
-            ])
-            ->assertJsonStructure([
-                'message',
-                'retry_after',
+            ->assertExactJson([
+                'message' => 'Too many login attempts. Sign-in has been temporarily suspended.',
             ]);
-
-        $this->assertGreaterThan(
-            0,
-            $response->json('retry_after')
-        );
     }
 }

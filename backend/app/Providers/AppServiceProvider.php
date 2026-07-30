@@ -25,37 +25,30 @@ class AppServiceProvider extends ServiceProvider
             $emailHash = hash('sha256', $email);
             $ipAddress = (string) $request->ip();
 
-            $tooManyAttemptsResponse = static function (
+            $blockedResponse = static function (
                 Request $request,
                 array $headers
             ) {
-                return response()->json(
-                    [
-                        'message' => 'Too many login attempts. Please try again later.',
-                        'retry_after' => (int) ($headers['Retry-After'] ?? 60),
-                    ],
-                    429,
-                    $headers
-                );
+                return response()->json([
+                    'message' => 'Too many login attempts. Sign-in has been temporarily suspended.',
+                ], 429);
             };
 
             return [
+                // يحمي الحساب من هجوم موزع من عدة عناوين IP.
                 Limit::perMinute(5)
-                    ->by(
-                        'login-email-ip-minute:'
-                        .$emailHash
-                        .'|'
-                        .$ipAddress
-                    )
-                    ->response($tooManyAttemptsResponse),
+                    ->by('login-account-minute:'.$emailHash)
+                    ->response($blockedResponse),
 
+                // يمنع عنوان IP واحدًا من تجربة حسابات كثيرة.
                 Limit::perMinute(20)
                     ->by('login-ip-minute:'.$ipAddress)
-                    ->response($tooManyAttemptsResponse),
+                    ->response($blockedResponse),
 
+                // يمنع الهجمات البطيئة المستمرة.
                 Limit::perHour(100)
                     ->by('login-ip-hour:'.$ipAddress)
-                    ->response($tooManyAttemptsResponse),
+                    ->response($blockedResponse),
             ];
         });
     }
