@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { authService } from '../services/authService'
+import { dashboardService } from '../services/dashboardService'
 
 interface NavigationItem {
   label: string
@@ -55,32 +56,6 @@ const navigationItems: NavigationItem[] = [
     permission: 'view security dashboard',
   },
 ]
-const statistics = [
-  {
-    title: 'Active Employees',
-    value: '—',
-    description: 'Employee directory',
-    icon: Users,
-  },
-  {
-    title: 'Departments',
-    value: '—',
-    description: 'Organization structure',
-    icon: Building2,
-  },
-  {
-    title: 'Active Workflows',
-    value: '0',
-    description: 'Automation processes',
-    icon: Workflow,
-  },
-  {
-    title: 'System Health',
-    value: '100%',
-    description: 'All services operational',
-    icon: Activity,
-  },
-]
 
 function DashboardPage() {
   const navigate = useNavigate()
@@ -95,7 +70,15 @@ function DashboardPage() {
     queryFn: authService.getCurrentUser,
     retry: false,
   })
-
+const {
+  data: dashboardSummary,
+  isPending: isSummaryPending,
+  isError: isSummaryError,
+} = useQuery({
+  queryKey: ['dashboard-summary'],
+  queryFn: dashboardService.getSummary,
+  retry: false,
+})
   const handleLogout = async () => {
     setIsLoggingOut(true)
 
@@ -112,7 +95,55 @@ function DashboardPage() {
       navigate('/login', { replace: true })
     }
   }
+  const summaryValue = (
+  value: number | undefined,
+): string => {
+  if (isSummaryPending) {
+    return '...'
+  }
 
+  if (isSummaryError || value === undefined) {
+    return '—'
+  }
+
+  return value.toLocaleString()
+}
+
+const statistics = [
+  {
+    title: 'Employees',
+    value: summaryValue(
+      dashboardSummary?.employees_total,
+    ),
+    description: 'Company employee records',
+    icon: Users,
+  },
+  {
+    title: 'Departments',
+    value: summaryValue(
+      dashboardSummary?.departments_total,
+    ),
+    description: 'Organization structure',
+    icon: Building2,
+  },
+  {
+    title: 'Failed Logins',
+    value: summaryValue(
+      dashboardSummary?.failed_logins_24h,
+    ),
+    description: 'During the last 24 hours',
+    icon: Activity,
+  },
+  {
+    title: 'Elevated Risk',
+    value: summaryValue(
+      dashboardSummary
+        ?.elevated_risk_attempts_24h,
+    ),
+    description: 'Risk score 50 or higher',
+    icon: ShieldCheck,
+  },
+]
   if (isError) {
     return <Navigate to="/login" replace />
   }
