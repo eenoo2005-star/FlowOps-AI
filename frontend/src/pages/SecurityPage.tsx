@@ -92,7 +92,47 @@ function riskClasses(riskScore: number): string {
   return 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300'
 }
 
+function isLocalOrPrivateIp(ipAddress: string): boolean {
+  if (
+    ipAddress === '127.0.0.1' ||
+    ipAddress === '::1' ||
+    ipAddress === 'localhost'
+  ) {
+    return true
+  }
+
+  const octets = ipAddress
+    .split('.')
+    .map((part) => Number(part))
+
+  if (
+    octets.length !== 4 ||
+    octets.some(
+      (octet) =>
+        !Number.isInteger(octet) ||
+        octet < 0 ||
+        octet > 255,
+    )
+  ) {
+    return false
+  }
+
+  const [first, second] = octets
+
+  return (
+    first === 10 ||
+    (first === 172 &&
+      second >= 16 &&
+      second <= 31) ||
+    (first === 192 && second === 168) ||
+    first === 127
+  )
+}
 function locationLabel(attempt: LoginAttempt): string {
+  if (isLocalOrPrivateIp(attempt.ip_address)) {
+    return 'Local development network'
+  }
+
   const values = [
     attempt.location.city,
     attempt.location.region,
@@ -101,7 +141,17 @@ function locationLabel(attempt: LoginAttempt): string {
 
   return values.length > 0
     ? values.join(', ')
-    : 'Unknown location'
+    : 'Location unavailable'
+}
+
+function locationDescription(
+  attempt: LoginAttempt,
+): string {
+  if (isLocalOrPrivateIp(attempt.ip_address)) {
+    return 'Private addresses cannot be geolocated'
+  }
+
+  return 'Approximate IP location'
 }
 
 function SecurityPage() {
@@ -823,8 +873,8 @@ function SecurityPage() {
                             </p>
 
                             <p className="mt-1 text-[10px] text-slate-700">
-                              Approximate IP location
-                            </p>
+  {locationDescription(attempt)}
+</p>
                           </div>
                         </div>
                       </td>

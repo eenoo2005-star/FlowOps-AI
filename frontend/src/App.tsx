@@ -5,6 +5,7 @@ import {
   Routes,
 } from 'react-router-dom'
 import DashboardPage from './pages/DashboardPage'
+import DepartmentsPage from './pages/DepartmentsPage'
 import LoginPage from './pages/LoginPage'
 import SecurityPage from './pages/SecurityPage'
 import ProtectedRoute from './routes/ProtectedRoute'
@@ -29,6 +30,11 @@ function App() {
           <Route
             path="/dashboard"
             element={<DashboardPage />}
+          />
+
+          <Route
+            path="/departments"
+            element={<DepartmentsPage />}
           />
 
           <Route

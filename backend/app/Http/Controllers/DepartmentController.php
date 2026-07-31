@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\IndexDepartmentRequest;
 use App\Http\Requests\StoreDepartmentRequest;
 use App\Http\Requests\UpdateDepartmentRequest;
 use App\Http\Resources\DepartmentResource;
@@ -11,24 +12,27 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
-class DepartmentController extends Controller
+final class DepartmentController extends Controller
 {
     public function __construct(
-        protected DepartmentService $departmentService
-    ) {
-    }
+        private readonly DepartmentService $departmentService
+    ) {}
 
-    public function index(): AnonymousResourceCollection
-    {
+    public function index(
+        IndexDepartmentRequest $request
+    ): AnonymousResourceCollection {
         Gate::authorize('viewAny', Department::class);
 
         return DepartmentResource::collection(
-            $this->departmentService->paginate()
+            $this->departmentService->paginate(
+                $request->validated()
+            )
         );
     }
 
-    public function store(StoreDepartmentRequest $request): DepartmentResource
-    {
+    public function store(
+        StoreDepartmentRequest $request
+    ): DepartmentResource {
         Gate::authorize('create', Department::class);
 
         $data = $request->validated();
@@ -39,8 +43,9 @@ class DepartmentController extends Controller
         return new DepartmentResource($department);
     }
 
-    public function show(Department $department): DepartmentResource
-    {
+    public function show(
+        Department $department
+    ): DepartmentResource {
         Gate::authorize('view', $department);
 
         return new DepartmentResource($department);
@@ -60,8 +65,9 @@ class DepartmentController extends Controller
         return new DepartmentResource($department);
     }
 
-    public function destroy(Department $department): Response
-    {
+    public function destroy(
+        Department $department
+    ): Response {
         Gate::authorize('delete', $department);
 
         $this->departmentService->delete($department);
