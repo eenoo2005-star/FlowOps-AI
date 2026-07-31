@@ -20,9 +20,9 @@ class RolePermissionSeeder extends Seeder
             'companies.delete',
 
             'departments.view',
-'departments.create',
-'departments.update',
-'departments.delete',
+            'departments.create',
+            'departments.update',
+            'departments.delete',
 
             'users.view',
             'users.create',
@@ -30,9 +30,9 @@ class RolePermissionSeeder extends Seeder
             'users.delete',
 
             'employees.view',
-'employees.create',
-'employees.update',
-'employees.delete',
+            'employees.create',
+            'employees.update',
+            'employees.delete',
 
             'roles.view',
             'roles.manage',
@@ -96,13 +96,13 @@ class RolePermissionSeeder extends Seeder
             'reports.view',
             'audit.view',
             'departments.view',
-'departments.create',
-'departments.update',
-'departments.delete',
-'employees.view',
-'employees.create',
-'employees.update',
-'employees.delete',
+            'departments.create',
+            'departments.update',
+            'departments.delete',
+            'employees.view',
+            'employees.create',
+            'employees.update',
+            'employees.delete',
         ]);
 
         Role::findByName('manager')->givePermissionTo([
@@ -115,7 +115,7 @@ class RolePermissionSeeder extends Seeder
             'reports.view',
             'departments.view',
             'employees.view',
-'employees.update',
+            'employees.update',
         ]);
 
         Role::findByName('employee')->givePermissionTo([
@@ -145,5 +145,6 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->call(SecurityPermissionSeeder::class);
     }
 }
