@@ -6,6 +6,7 @@ import {
 } from 'react-router-dom'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
+import SecurityPage from './pages/SecurityPage'
 import ProtectedRoute from './routes/ProtectedRoute'
 
 function App() {
@@ -14,18 +15,33 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={<Navigate to="/dashboard" replace />}
+          element={
+            <Navigate to="/dashboard" replace />
+          }
         />
 
-        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/login"
+          element={<LoginPage />}
+        />
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route
+            path="/dashboard"
+            element={<DashboardPage />}
+          />
+
+          <Route
+            path="/security"
+            element={<SecurityPage />}
+          />
         </Route>
 
         <Route
           path="*"
-          element={<Navigate to="/dashboard" replace />}
+          element={
+            <Navigate to="/dashboard" replace />
+          }
         />
       </Routes>
     </BrowserRouter>

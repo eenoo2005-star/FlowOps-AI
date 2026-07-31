@@ -14,14 +14,23 @@ import {
   Sparkles,
   Users,
   Workflow,
+  type LucideIcon,
 } from 'lucide-react'
 import { authService } from '../services/authService'
 
-const navigationItems = [
+interface NavigationItem {
+  label: string
+  icon: LucideIcon
+  active: boolean
+  path?: string
+  permission?: string
+}
+const navigationItems: NavigationItem[] = [
   {
     label: 'Dashboard',
     icon: LayoutDashboard,
     active: true,
+    path: '/dashboard',
   },
   {
     label: 'Departments',
@@ -38,8 +47,14 @@ const navigationItems = [
     icon: Workflow,
     active: false,
   },
+  {
+    label: 'Security',
+    icon: ShieldCheck,
+    active: false,
+    path: '/security',
+    permission: 'view security dashboard',
+  },
 ]
-
 const statistics = [
   {
     title: 'Active Employees',
@@ -138,13 +153,25 @@ function DashboardPage() {
               Workspace
             </p>
 
-            {navigationItems.map((item) => {
+           {navigationItems
+  .filter(
+    (item) =>
+      !item.permission ||
+      user?.permissions?.includes(item.permission),
+  )
+  .map((item) => {
               const Icon = item.icon
 
               return (
                 <button
                   key={item.label}
                   type="button"
+                  onClick={() => {
+  if (item.path) {
+    navigate(item.path)
+  }
+}}
+disabled={!item.path}
                   className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition ${
                     item.active
                       ? 'border border-sky-400/15 bg-sky-500/10 text-sky-300'
@@ -154,11 +181,11 @@ function DashboardPage() {
                   <Icon size={18} />
                   <span>{item.label}</span>
 
-                  {!item.active && (
-                    <span className="ml-auto text-[9px] uppercase tracking-wider text-slate-700">
-                      Soon
-                    </span>
-                  )}
+                  {!item.path && (
+  <span className="ml-auto text-[9px] uppercase tracking-wider text-slate-700">
+    Soon
+  </span>
+)}
                 </button>
               )
             })}

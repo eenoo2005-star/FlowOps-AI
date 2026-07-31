@@ -146,5 +146,18 @@ class RolePermissionSeeder extends Seeder
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         $this->call(SecurityPermissionSeeder::class);
+        $systemAdmin = \Spatie\Permission\Models\Role::findOrCreate(
+    'system admin',
+    'web'
+);
+
+$systemAdmin->syncPermissions(
+    \Spatie\Permission\Models\Permission::query()
+        ->where('guard_name', 'web')
+        ->get()
+);
+
+app(\Spatie\Permission\PermissionRegistrar::class)
+    ->forgetCachedPermissions();
     }
 }
