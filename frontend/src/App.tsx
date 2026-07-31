@@ -6,6 +6,7 @@ import {
 } from 'react-router-dom'
 import DashboardPage from './pages/DashboardPage'
 import DepartmentsPage from './pages/DepartmentsPage'
+import EmployeesPage from './pages/EmployeesPage'
 import LoginPage from './pages/LoginPage'
 import SecurityPage from './pages/SecurityPage'
 import ProtectedRoute from './routes/ProtectedRoute'
@@ -35,6 +36,11 @@ function App() {
           <Route
             path="/departments"
             element={<DepartmentsPage />}
+          />
+
+          <Route
+            path="/employees"
+            element={<EmployeesPage />}
           />
 
           <Route

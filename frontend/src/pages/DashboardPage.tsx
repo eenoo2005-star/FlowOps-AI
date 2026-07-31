@@ -37,11 +37,15 @@ const navigationItems: NavigationItem[] = [
     label: 'Departments',
     icon: Building2,
     active: false,
+    path: '/departments',
+    permission: 'departments.view',
   },
   {
     label: 'Employees',
     icon: Users,
     active: false,
+    path: '/employees',
+    permission: 'employees.view',
   },
   {
     label: 'Workflows',
