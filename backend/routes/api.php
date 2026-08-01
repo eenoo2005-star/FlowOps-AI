@@ -15,6 +15,7 @@ use App\Http\Controllers\WorkflowDefinitionController;
 use App\Http\Controllers\WorkflowStepController;
 use App\Http\Controllers\WorkflowTaskActionController;
 use App\Http\Controllers\WorkflowTaskController;
+use App\Http\Controllers\WorkspaceSearchController;
 use Illuminate\Support\Facades\Route;
 
 // تسجيل الدخول
@@ -39,6 +40,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // مسارات الحساب والمستخدم
     Route::get('/user', [AuthController::class, 'user']);
+
+    Route::get(
+        '/workspace-search',
+        WorkspaceSearchController::class
+    )->middleware('throttle:120,1');
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // مسارات الموظفين والأقسام
