@@ -5,9 +5,11 @@ import {
   Activity,
   Bell,
   Building2,
-  ChevronRight,
+    Boxes,
+ChevronRight,
   Clock3,
-  LayoutDashboard,
+    FileText,
+LayoutDashboard,
   LogOut,
   Search,
   ShieldCheck,
@@ -36,7 +38,7 @@ const navigationItems: NavigationItem[] = [
   {
     label: 'Departments',
     icon: Building2,
-    active: false,
+active: false,
     path: '/departments',
     permission: 'departments.view',
   },
@@ -53,6 +55,20 @@ const navigationItems: NavigationItem[] = [
     active: false,
     path: '/workflows',
     permission: 'workflows.view',
+  },
+  {
+    label: 'Request Types',
+    icon: Boxes,
+    active: false,
+    path: '/request-types',
+    permission: 'request-types.view',
+  },
+  {
+    label: 'Requests',
+    icon: FileText,
+    active: false,
+    path: '/requests',
+    permission: 'requests.view',
   },
   {
     label: 'Security',
@@ -131,7 +147,7 @@ const statistics = [
     ),
     description: 'Organization structure',
     icon: Building2,
-  },
+},
   {
     title: 'Failed Logins',
     value: summaryValue(

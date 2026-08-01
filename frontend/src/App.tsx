@@ -4,14 +4,16 @@ import {
   Route,
   Routes,
 } from 'react-router-dom'
+import ApprovalsPage from './pages/ApprovalsPage'
 import DashboardPage from './pages/DashboardPage'
+import RequestTypesPage from './pages/RequestTypesPage'
+import InternalRequestsPage from './pages/InternalRequestsPage'
 import DepartmentsPage from './pages/DepartmentsPage'
 import EmployeesPage from './pages/EmployeesPage'
 import LoginPage from './pages/LoginPage'
 import SecurityPage from './pages/SecurityPage'
 import WorkflowsPage from './pages/WorkflowsPage'
 import ProtectedRoute from './routes/ProtectedRoute'
-
 function App() {
   return (
     <BrowserRouter>
@@ -33,6 +35,10 @@ function App() {
             path="/dashboard"
             element={<DashboardPage />}
           />
+          <Route
+  path="/approvals"
+  element={<ApprovalsPage />}
+/>
 
           <Route
             path="/departments"
@@ -44,6 +50,15 @@ function App() {
             element={<EmployeesPage />}
           />
 
+          <Route
+            path="/request-types"
+            element={<RequestTypesPage />}
+          />
+
+          <Route
+            path="/requests"
+            element={<InternalRequestsPage />}
+          />
           <Route
             path="/workflows"
             element={<WorkflowsPage />}
