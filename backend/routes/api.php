@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\Security\SecurityController;
+use App\Http\Controllers\AppNotificationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
@@ -123,6 +124,25 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post(
         '/workflow-tasks/{workflowTask}/reject',
         [WorkflowTaskActionController::class, 'reject']
+    );
+    Route::get(
+        '/notifications',
+        [AppNotificationController::class, 'index']
+    );
+
+    Route::get(
+        '/notifications/unread-count',
+        [AppNotificationController::class, 'unreadCount']
+    );
+
+    Route::post(
+        '/notifications/mark-all-read',
+        [AppNotificationController::class, 'markAllRead']
+    );
+
+    Route::post(
+        '/notifications/{appNotification}/read',
+        [AppNotificationController::class, 'markRead']
     );
     Route::apiResource('employees', EmployeeController::class);
     Route::apiResource('departments', DepartmentController::class);

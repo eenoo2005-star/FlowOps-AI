@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Scopes\TenantScope;
+use App\Services\AppNotificationService;
 use App\Services\RequestAuditService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -50,29 +51,36 @@ final class WorkflowTaskDecision extends Model
                     ?->workflowInstance
                     ?->internalRequest;
 
-                if ($internalRequest === null) {
-                    return;
+                if ($internalRequest !== null) {
+                    $approved =
+                        $decision->decision
+                            === 'approved';
+
+                    app(RequestAuditService::class)
+                        ->record(
+                            $internalRequest,
+                            $approved
+                                ? 'approval.approved'
+                                : 'approval.rejected',
+                            $approved
+                                ? 'Approval task approved.'
+                                : 'Approval task rejected.',
+                            [
+                                'workflow_task_id' => $decision
+                                    ->workflow_task_id,
+                                'workflow_step_id' => $decision
+                                    ->workflowTask
+                                    ?->workflow_step_id,
+                                'note' => $decision->note,
+                            ],
+                            $decision->actedByUser
+                        );
                 }
 
-                $approved =
-                    $decision->decision === 'approved';
-
-                app(RequestAuditService::class)->record(
-                    $internalRequest,
-                    $approved
-                        ? 'approval.approved'
-                        : 'approval.rejected',
-                    $approved
-                        ? 'Approval task approved.'
-                        : 'Approval task rejected.',
-                    [
-                        'workflow_task_id' => $decision->workflow_task_id,
-                        'workflow_step_id' => $decision->workflowTask
-                            ?->workflow_step_id,
-                        'note' => $decision->note,
-                    ],
-                    $decision->actedByUser
-                );
+                app(AppNotificationService::class)
+                    ->notifyRequesterDecision(
+                        $decision
+                    );
             }
         );
     }

@@ -19,6 +19,7 @@ LayoutDashboard,
   Workflow,
   type LucideIcon,
 } from 'lucide-react'
+import NotificationBell from '../components/NotificationBell'
 import { authService } from '../services/authService'
 import { dashboardService } from '../services/dashboardService'
 
@@ -35,6 +36,13 @@ const navigationItems: NavigationItem[] = [
     icon: LayoutDashboard,
     active: true,
     path: '/dashboard',
+  },
+  {
+    label: 'Notifications',
+    icon: Bell,
+    active: false,
+    path: '/notifications',
+    permission: 'notifications.view',
   },
   {
     label: 'Departments',
@@ -302,13 +310,13 @@ disabled={!item.path}
                 Search the workspace...
               </button>
 
-              <button
-                type="button"
-                className="relative grid h-10 w-10 place-items-center rounded-xl border border-slate-800 bg-slate-950/60 text-slate-500 transition hover:text-sky-300"
-              >
-                <Bell size={17} />
-                <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-sky-400" />
-              </button>
+              <NotificationBell
+                  enabled={
+                    user?.permissions?.includes(
+                      'notifications.view',
+                    ) ?? false
+                  }
+                />
             </div>
           </header>
 

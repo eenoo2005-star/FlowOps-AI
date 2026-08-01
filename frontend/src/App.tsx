@@ -11,6 +11,7 @@ import RequestTypesPage from './pages/RequestTypesPage'
 import InternalRequestsPage from './pages/InternalRequestsPage'
 import DepartmentsPage from './pages/DepartmentsPage'
 import EmployeesPage from './pages/EmployeesPage'
+import NotificationsPage from './pages/NotificationsPage'
 import LoginPage from './pages/LoginPage'
 import SecurityPage from './pages/SecurityPage'
 import WorkflowsPage from './pages/WorkflowsPage'
@@ -35,6 +36,10 @@ function App() {
           <Route
             path="/dashboard"
             element={<DashboardPage />}
+          />
+          <Route
+            path="/notifications"
+            element={<NotificationsPage />}
           />
           <Route
   path="/approvals"

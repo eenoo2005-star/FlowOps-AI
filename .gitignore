@@ -1,0 +1,3 @@
+*.backup-*
+*.notifications-backup-*
+notifications-sla-state.txt

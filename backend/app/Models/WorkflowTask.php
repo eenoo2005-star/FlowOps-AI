@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Scopes\TenantScope;
+use App\Services\AppNotificationService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +21,10 @@ final class WorkflowTask extends Model
         'assigned_role',
         'status',
         'due_at',
+        'reminder_sent_at',
+        'overdue_notified_at',
+        'escalation_level',
+        'escalated_at',
         'acted_at',
         'acted_by_employee_id',
         'decision_note',
@@ -32,6 +37,10 @@ final class WorkflowTask extends Model
             'workflow_step_id' => 'integer',
             'assigned_employee_id' => 'integer',
             'due_at' => 'datetime',
+            'reminder_sent_at' => 'datetime',
+            'overdue_notified_at' => 'datetime',
+            'escalation_level' => 'integer',
+            'escalated_at' => 'datetime',
             'acted_at' => 'datetime',
             'acted_by_employee_id' => 'integer',
         ];
@@ -40,30 +49,53 @@ final class WorkflowTask extends Model
     protected static function booted(): void
     {
         self::addGlobalScope(new TenantScope);
+
+        self::created(
+            static function (
+                self $workflowTask
+            ): void {
+                app(AppNotificationService::class)
+                    ->notifyTaskAssigned(
+                        $workflowTask
+                    );
+            }
+        );
     }
 
     public function workflowInstance(): BelongsTo
     {
-        return $this->belongsTo(WorkflowInstance::class);
+        return $this->belongsTo(
+            WorkflowInstance::class
+        );
     }
 
     public function workflowStep(): BelongsTo
     {
-        return $this->belongsTo(WorkflowStep::class);
+        return $this->belongsTo(
+            WorkflowStep::class
+        );
     }
 
     public function assignedEmployee(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'assigned_employee_id');
+        return $this->belongsTo(
+            Employee::class,
+            'assigned_employee_id'
+        );
     }
 
     public function actedByEmployee(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'acted_by_employee_id');
+        return $this->belongsTo(
+            Employee::class,
+            'acted_by_employee_id'
+        );
     }
 
     public function decisions(): HasMany
     {
-        return $this->hasMany(WorkflowTaskDecision::class)->orderBy('acted_at');
+        return $this
+            ->hasMany(WorkflowTaskDecision::class)
+            ->orderBy('acted_at');
     }
 }
