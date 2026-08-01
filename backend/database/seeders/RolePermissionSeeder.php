@@ -146,6 +146,8 @@ class RolePermissionSeeder extends Seeder
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         $this->call(SecurityPermissionSeeder::class);
+        $this->call(WorkflowPermissionSeeder::class);
+        $this->call(InternalRequestPermissionSeeder::class);
         $systemAdmin = \Spatie\Permission\Models\Role::findOrCreate(
     'system admin',
     'web'

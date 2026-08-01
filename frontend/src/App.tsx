@@ -9,6 +9,7 @@ import DepartmentsPage from './pages/DepartmentsPage'
 import EmployeesPage from './pages/EmployeesPage'
 import LoginPage from './pages/LoginPage'
 import SecurityPage from './pages/SecurityPage'
+import WorkflowsPage from './pages/WorkflowsPage'
 import ProtectedRoute from './routes/ProtectedRoute'
 
 function App() {
@@ -41,6 +42,11 @@ function App() {
           <Route
             path="/employees"
             element={<EmployeesPage />}
+          />
+
+          <Route
+            path="/workflows"
+            element={<WorkflowsPage />}
           />
 
           <Route

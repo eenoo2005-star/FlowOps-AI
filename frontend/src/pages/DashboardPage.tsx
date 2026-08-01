@@ -51,6 +51,8 @@ const navigationItems: NavigationItem[] = [
     label: 'Workflows',
     icon: Workflow,
     active: false,
+    path: '/workflows',
+    permission: 'workflows.view',
   },
   {
     label: 'Security',
