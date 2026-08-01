@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\DashboardAnalyticsController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\Security\SecurityController;
 use App\Http\Controllers\AppNotificationController;
@@ -25,6 +26,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // مسارات لوحة التحكم (Dashboard)
     Route::get('/dashboard/summary', DashboardController::class);
+    Route::get(
+        '/dashboard/analytics',
+        DashboardAnalyticsController::class
+    );
 
     // مسارات الأمان (Security)
     Route::prefix('security')->group(function (): void {

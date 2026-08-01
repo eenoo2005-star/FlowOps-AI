@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
+  BarChart3,
   ClipboardCheck,
   Activity,
   Bell,
@@ -36,6 +37,13 @@ const navigationItems: NavigationItem[] = [
     icon: LayoutDashboard,
     active: true,
     path: '/dashboard',
+  },
+  {
+    label: 'Analytics',
+    icon: BarChart3,
+    active: false,
+    path: '/analytics',
+    permission: 'reports.view',
   },
   {
     label: 'Notifications',

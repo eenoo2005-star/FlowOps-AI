@@ -1,3 +1,4 @@
 *.backup-*
 *.notifications-backup-*
 notifications-sla-state.txt
+*-contract.txt

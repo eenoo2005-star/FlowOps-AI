@@ -6,6 +6,7 @@ import {
 } from 'react-router-dom'
 import ApprovalsPage from './pages/ApprovalsPage'
 import DashboardPage from './pages/DashboardPage'
+import AnalyticsPage from './pages/AnalyticsPage'
 import RequestCollaborationPage from './pages/RequestCollaborationPage'
 import RequestTypesPage from './pages/RequestTypesPage'
 import InternalRequestsPage from './pages/InternalRequestsPage'
@@ -36,6 +37,10 @@ function App() {
           <Route
             path="/dashboard"
             element={<DashboardPage />}
+          />
+          <Route
+            path="/analytics"
+            element={<AnalyticsPage />}
           />
           <Route
             path="/notifications"
