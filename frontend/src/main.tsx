@@ -6,6 +6,9 @@ import {
 } from '@tanstack/react-query'
 import './index.css'
 import App from './App'
+import { initializeTheme } from './theme'
+
+initializeTheme()
 
 const queryClient = new QueryClient({
   defaultOptions: {

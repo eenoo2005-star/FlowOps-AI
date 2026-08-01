@@ -1,4 +1,5 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
+import WorkspaceExperience from '../components/layout/WorkspaceExperience'
 
 function ProtectedRoute() {
   const token =
@@ -9,7 +10,7 @@ function ProtectedRoute() {
     return <Navigate to="/login" replace />
   }
 
-  return <Outlet />
+  return <WorkspaceExperience />
 }
 
 export default ProtectedRoute

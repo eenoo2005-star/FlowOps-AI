@@ -5,6 +5,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
+import FlowBackground from '../components/layout/FlowBackground'
+import ThemeModeControl from '../components/layout/ThemeModeControl'
 import {
   loginSchema,
   type LoginFormData,
@@ -26,70 +28,84 @@ import {
 
 function LoginPage() {
   const navigate = useNavigate()
-    const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword] =
+    useState(false)
 
-const {
-  register,
-  handleSubmit,
-  formState: { errors },
-} = useForm<LoginFormData>({
-  resolver: zodResolver(loginSchema),
-  defaultValues: {
-    email: '',
-    password: '',
-    remember: false,
-  },
-})
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      remember: false,
+    },
+  })
 
-const loginMutation = useMutation({
-  mutationFn: (data: LoginFormData) =>
-    authService.login({
-      email: data.email,
-      password: data.password,
-      device_name: 'flowops-web',
-    }),
+  const loginMutation = useMutation({
+    mutationFn: (data: LoginFormData) =>
+      authService.login({
+        email: data.email,
+        password: data.password,
+        device_name: 'flowops-web',
+      }),
 
-  onSuccess: (response, variables) => {
-    const storage = variables.remember
-      ? localStorage
-      : sessionStorage
+    onSuccess: (response, variables) => {
+      const storage = variables.remember
+        ? localStorage
+        : sessionStorage
 
-    localStorage.removeItem('flowops_token')
-    localStorage.removeItem('flowops_user')
-    sessionStorage.removeItem('flowops_token')
-    sessionStorage.removeItem('flowops_user')
+      localStorage.removeItem('flowops_token')
+      localStorage.removeItem('flowops_user')
+      sessionStorage.removeItem('flowops_token')
+      sessionStorage.removeItem('flowops_user')
 
-    storage.setItem('flowops_token', response.token)
-    storage.setItem(
-      'flowops_user',
-      JSON.stringify(response.user),
-    )
-    navigate('/dashboard', { replace: true })
-  },
-})
+      storage.setItem('flowops_token', response.token)
+      storage.setItem(
+        'flowops_user',
+        JSON.stringify(response.user),
+      )
 
-const onSubmit = handleSubmit((data) => {
-  loginMutation.reset()
-  loginMutation.mutate(data)
-})
+      navigate('/dashboard', {
+        replace: true,
+      })
+    },
+  })
 
-const loginError = axios.isAxiosError(loginMutation.error)
-  ? (
-      loginMutation.error.response?.data as {
-        message?: string
-        errors?: {
-          email?: string[]
-        }
-      } | undefined
-    )?.errors?.email?.[0]
+  const onSubmit = handleSubmit((data) => {
+    loginMutation.reset()
+    loginMutation.mutate(data)
+  })
+
+  const loginError = axios.isAxiosError(
+    loginMutation.error,
+  )
+    ? (
+        loginMutation.error.response?.data as
+          | {
+              message?: string
+              errors?: {
+                email?: string[]
+              }
+            }
+          | undefined
+      )?.errors?.email?.[0]
       ?? loginMutation.error.response?.data?.message
       ?? 'Unable to connect to the authentication server.'
-  : loginMutation.error
-    ? 'An unexpected error occurred.'
-    : null
+    : loginMutation.error
+      ? 'An unexpected error occurred.'
+      : null
 
   return (
     <main className="login-page">
+      <FlowBackground variant="login" />
+
+      <div className="login-theme-control">
+        <ThemeModeControl compact />
+      </div>
+
       <div className="background-grid" />
       <div className="background-glow glow-one" />
       <div className="background-glow glow-two" />
@@ -111,11 +127,17 @@ const loginError = axios.isAxiosError(loginMutation.error)
 
             <div className="brand-logo">
               <div className="logo-symbol">
-                <Workflow size={27} strokeWidth={2.2} />
+                <Workflow
+                  size={27}
+                  strokeWidth={2.2}
+                />
               </div>
 
               <div>
-                <p className="brand-name">FlowOps AI</p>
+                <p className="brand-name">
+                  FlowOps AI
+                </p>
+
                 <p className="brand-subtitle">
                   Enterprise Workflow Intelligence
                 </p>
@@ -123,16 +145,23 @@ const loginError = axios.isAxiosError(loginMutation.error)
             </div>
 
             <div className="brand-heading">
-              <p className="eyebrow">OPERATIONS. AUTOMATED.</p>
+              <p className="eyebrow">
+                OPERATIONS. AUTOMATED.
+              </p>
 
               <h1>
                 Orchestrate every workflow
-                <span> from one intelligent platform.</span>
+                <span>
+                  {' '}
+                  from one intelligent platform.
+                </span>
               </h1>
 
               <p className="brand-description">
-                Connect teams, automate approvals, monitor performance and
-                transform operational data into actionable intelligence.
+                Connect teams, automate approvals,
+                monitor performance and transform
+                operational data into actionable
+                intelligence.
               </p>
             </div>
 
@@ -143,8 +172,14 @@ const loginError = axios.isAxiosError(loginMutation.error)
                 </div>
 
                 <div>
-                  <strong>Intelligent workflows</strong>
-                  <span>Design and control complex business processes.</span>
+                  <strong>
+                    Intelligent workflows
+                  </strong>
+
+                  <span>
+                    Design and control complex business
+                    processes.
+                  </span>
                 </div>
               </div>
 
@@ -154,8 +189,14 @@ const loginError = axios.isAxiosError(loginMutation.error)
                 </div>
 
                 <div>
-                  <strong>Executive visibility</strong>
-                  <span>Live operational KPIs and decision-ready insights.</span>
+                  <strong>
+                    Executive visibility
+                  </strong>
+
+                  <span>
+                    Live operational KPIs and
+                    decision-ready insights.
+                  </span>
                 </div>
               </div>
 
@@ -165,8 +206,14 @@ const loginError = axios.isAxiosError(loginMutation.error)
                 </div>
 
                 <div>
-                  <strong>Enterprise security</strong>
-                  <span>Multi-tenant isolation and role-based access.</span>
+                  <strong>
+                    Enterprise security
+                  </strong>
+
+                  <span>
+                    Multi-tenant isolation and
+                    role-based access.
+                  </span>
                 </div>
               </div>
             </div>
@@ -174,7 +221,9 @@ const loginError = axios.isAxiosError(loginMutation.error)
 
           <div className="system-status">
             <div className="status-dot" />
-            <span>All enterprise services operational</span>
+            <span>
+              All enterprise services operational
+            </span>
           </div>
         </div>
 
@@ -199,57 +248,87 @@ const loginError = axios.isAxiosError(loginMutation.error)
               <h2>Welcome back</h2>
 
               <p>
-                Sign in to access your company&apos;s operations workspace.
+                Sign in to access your company&apos;s
+                operations workspace.
               </p>
             </div>
 
-            <form onSubmit={onSubmit} className="login-form" noValidate>
+            <form
+              onSubmit={onSubmit}
+              className="login-form"
+              noValidate
+            >
               <label className="form-field">
                 <span>Work email</span>
 
                 <div className="input-wrapper">
-                  {errors.email && (
-  <span className="field-error">
-    {errors.email.message}
-  </span>
-)}
-                  <Mail className="input-icon" size={18} />
+                  <Mail
+                    className="input-icon"
+                    size={18}
+                  />
 
-                 <input
-  type="email"
-  autoComplete="email"
-  placeholder="name@company.com"
-  aria-invalid={Boolean(errors.email)}
-  {...register('email')}
-/>
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    placeholder="name@company.com"
+                    aria-invalid={Boolean(
+                      errors.email,
+                    )}
+                    {...register('email')}
+                  />
                 </div>
+
+                {errors.email && (
+                  <span className="field-error">
+                    {errors.email.message}
+                  </span>
+                )}
               </label>
 
               <label className="form-field">
                 <div className="field-heading">
                   <span>Password</span>
 
-                  <button type="button" className="forgot-password">
+                  <button
+                    type="button"
+                    className="forgot-password"
+                  >
                     Forgot password?
                   </button>
                 </div>
 
                 <div className="input-wrapper">
-                  <LockKeyhole className="input-icon" size={18} />
+                  <LockKeyhole
+                    className="input-icon"
+                    size={18}
+                  />
 
-                 <input
-  type={showPassword ? 'text' : 'password'}
-  autoComplete="current-password"
-  placeholder="Enter your password"
-  aria-invalid={Boolean(errors.password)}
-  {...register('password')}
-/>
+                  <input
+                    type={
+                      showPassword
+                        ? 'text'
+                        : 'password'
+                    }
+                    autoComplete="current-password"
+                    placeholder="Enter your password"
+                    aria-invalid={Boolean(
+                      errors.password,
+                    )}
+                    {...register('password')}
+                  />
+
                   <button
                     type="button"
                     className="password-toggle"
-                    onClick={() => setShowPassword((current) => !current)}
+                    onClick={() =>
+                      setShowPassword(
+                        (current) => !current,
+                      )
+                    }
                     aria-label={
-                      showPassword ? 'Hide password' : 'Show password'
+                      showPassword
+                        ? 'Hide password'
+                        : 'Show password'
                     }
                   >
                     {showPassword ? (
@@ -259,33 +338,47 @@ const loginError = axios.isAxiosError(loginMutation.error)
                     )}
                   </button>
                 </div>
+
+                {errors.password && (
+                  <span className="field-error">
+                    {errors.password.message}
+                  </span>
+                )}
               </label>
 
               <label className="remember-row">
-              <input
-  type="checkbox"
-  {...register('remember')}
-/>
-                <span>Keep me signed in on this device</span>
+                <input
+                  type="checkbox"
+                  {...register('remember')}
+                />
+
+                <span>
+                  Keep me signed in on this device
+                </span>
               </label>
 
-{loginError && (
-  <div className="login-alert login-alert-error" role="alert">
-    {loginError}
-  </div>
-)}
+              {loginError && (
+                <div
+                  className="login-alert login-alert-error"
+                  role="alert"
+                >
+                  {loginError}
+                </div>
+              )}
 
-{loginMutation.isSuccess && (
-  <div className="login-alert login-alert-success">
-    Authentication successful. Your workspace is ready.
-  </div>
-)}
+              {loginMutation.isSuccess && (
+                <div className="login-alert login-alert-success">
+                  Authentication successful. Your
+                  workspace is ready.
+                </div>
+              )}
+
               <button
                 type="submit"
                 className="submit-button"
-               disabled={loginMutation.isPending}
+                disabled={loginMutation.isPending}
               >
-               {loginMutation.isPending ? (
+                {loginMutation.isPending ? (
                   <>
                     <span className="button-spinner" />
                     Authenticating...
@@ -303,26 +396,36 @@ const loginError = axios.isAxiosError(loginMutation.error)
               <CheckCircle2 size={16} />
 
               <span>
-                Protected by encrypted authentication and tenant isolation
+                Protected by encrypted authentication
+                and tenant isolation
               </span>
             </div>
           </div>
 
           <div className="ai-message">
             <Bot size={17} />
-            <span>FlowOps Intelligence is ready to assist your team.</span>
+
+            <span>
+              FlowOps Intelligence is ready to assist
+              your team.
+            </span>
           </div>
 
-         <div className="copyright-block">
-  <p className="copyright">
-    © 2026 FlowOps AI. Enterprise operations platform.
-  </p>
+          <div className="copyright-block">
+            <p className="copyright">
+              © 2026 FlowOps AI. Enterprise operations
+              platform.
+            </p>
 
-  <p className="creator-credit">
-    Designed, engineered and built end-to-end by
-    <span> Software Engineer Shaheen Idris</span>
-  </p>
-</div>
+            <p className="creator-credit">
+              Designed, engineered and built end-to-end
+              by
+              <span>
+                {' '}
+                Software Engineer Shaheen Idris
+              </span>
+            </p>
+          </div>
         </div>
       </section>
     </main>

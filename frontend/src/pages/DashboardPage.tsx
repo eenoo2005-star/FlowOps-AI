@@ -21,6 +21,7 @@ LayoutDashboard,
   type LucideIcon,
 } from 'lucide-react'
 import NotificationBell from '../components/NotificationBell'
+import { openWorkspaceSearch } from '../components/search/WorkspaceSearch'
 import { authService } from '../services/authService'
 import { dashboardService } from '../services/dashboardService'
 
@@ -210,7 +211,7 @@ const statistics = [
   return (
     <main className="min-h-screen bg-[#050b18] text-slate-100">
       <div className="flex min-h-screen">
-        <aside className="hidden w-72 flex-col border-r border-slate-800/80 bg-slate-950/75 p-5 backdrop-blur-xl lg:flex">
+        <aside className="legacy-dashboard-sidebar hidden w-72 flex-col border-r border-slate-800/80 bg-slate-950/75 p-5 backdrop-blur-xl lg:flex">
           <div className="flex items-center gap-3 border-b border-slate-800/70 px-2 pb-6">
             <div className="grid h-11 w-11 place-items-center rounded-xl border border-sky-400/20 bg-gradient-to-br from-blue-600 to-cyan-500 shadow-lg shadow-blue-950">
               <Workflow size={23} />
@@ -298,7 +299,7 @@ disabled={!item.path}
         </aside>
 
         <section className="min-w-0 flex-1">
-          <header className="flex h-20 items-center justify-between border-b border-slate-800/70 bg-slate-950/30 px-6 backdrop-blur-xl md:px-9">
+          <header className="legacy-dashboard-header flex h-20 items-center justify-between border-b border-slate-800/70 bg-slate-950/30 px-6 backdrop-blur-xl md:px-9">
             <div>
               <p className="text-xs text-slate-500">
                 Enterprise workspace
@@ -312,6 +313,7 @@ disabled={!item.path}
             <div className="flex items-center gap-3">
               <button
                 type="button"
+                onClick={openWorkspaceSearch}
                 className="hidden h-10 min-w-64 items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/60 px-4 text-left text-xs text-slate-600 md:flex"
               >
                 <Search size={16} />
