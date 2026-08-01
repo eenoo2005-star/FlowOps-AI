@@ -10,6 +10,8 @@ use App\Http\Controllers\InternalRequestController;
 use App\Http\Controllers\RequestTypeController;
 use App\Http\Controllers\WorkflowDefinitionController;
 use App\Http\Controllers\WorkflowStepController;
+use App\Http\Controllers\WorkflowTaskActionController;
+use App\Http\Controllers\WorkflowTaskController;
 use Illuminate\Support\Facades\Route;
 
 // تسجيل الدخول
@@ -72,6 +74,25 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post(
         '/internal-requests/{internalRequest}/submit',
         [InternalRequestActionController::class, 'submit']
+    );
+    Route::apiResource(
+        'workflow-tasks',
+        WorkflowTaskController::class
+    )->only([
+        'index',
+        'show',
+    ])->parameters([
+        'workflow-tasks' => 'workflowTask',
+    ]);
+
+    Route::post(
+        '/workflow-tasks/{workflowTask}/approve',
+        [WorkflowTaskActionController::class, 'approve']
+    );
+
+    Route::post(
+        '/workflow-tasks/{workflowTask}/reject',
+        [WorkflowTaskActionController::class, 'reject']
     );
     Route::apiResource('employees', EmployeeController::class);
     Route::apiResource('departments', DepartmentController::class);

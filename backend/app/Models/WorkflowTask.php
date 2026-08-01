@@ -6,6 +6,7 @@ use App\Models\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class WorkflowTask extends Model
 {
@@ -53,17 +54,16 @@ final class WorkflowTask extends Model
 
     public function assignedEmployee(): BelongsTo
     {
-        return $this->belongsTo(
-            Employee::class,
-            'assigned_employee_id'
-        );
+        return $this->belongsTo(Employee::class, 'assigned_employee_id');
     }
 
     public function actedByEmployee(): BelongsTo
     {
-        return $this->belongsTo(
-            Employee::class,
-            'acted_by_employee_id'
-        );
+        return $this->belongsTo(Employee::class, 'acted_by_employee_id');
+    }
+
+    public function decisions(): HasMany
+    {
+        return $this->hasMany(WorkflowTaskDecision::class)->orderBy('acted_at');
     }
 }
