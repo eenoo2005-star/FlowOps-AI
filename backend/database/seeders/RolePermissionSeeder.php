@@ -149,6 +149,7 @@ class RolePermissionSeeder extends Seeder
         $this->call(WorkflowPermissionSeeder::class);
         $this->call(InternalRequestPermissionSeeder::class);
         $this->call(WorkflowTaskPermissionSeeder::class);
+        $this->call(RequestCollaborationPermissionSeeder::class);
         $systemAdmin = \Spatie\Permission\Models\Role::findOrCreate(
     'system admin',
     'web'

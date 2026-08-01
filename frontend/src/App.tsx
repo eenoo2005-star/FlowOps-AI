@@ -6,6 +6,7 @@ import {
 } from 'react-router-dom'
 import ApprovalsPage from './pages/ApprovalsPage'
 import DashboardPage from './pages/DashboardPage'
+import RequestCollaborationPage from './pages/RequestCollaborationPage'
 import RequestTypesPage from './pages/RequestTypesPage'
 import InternalRequestsPage from './pages/InternalRequestsPage'
 import DepartmentsPage from './pages/DepartmentsPage'
@@ -58,6 +59,10 @@ function App() {
           <Route
             path="/requests"
             element={<InternalRequestsPage />}
+          />
+          <Route
+            path="/requests/:requestId/collaboration"
+            element={<RequestCollaborationPage />}
           />
           <Route
             path="/workflows"

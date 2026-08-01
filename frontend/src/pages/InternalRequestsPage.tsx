@@ -13,6 +13,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import {
+  MessageSquare,
   AlertTriangle,
   ArrowLeft,
   ChevronLeft,
@@ -1387,6 +1388,30 @@ function InternalRequestsPage() {
                     </p>
                   </section>
 
+                  <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-sky-400/15 bg-sky-500/5 p-5">
+                    <div>
+                      <h3 className="font-semibold">
+                        Collaboration and Audit
+                      </h3>
+
+                      <p className="mt-1 text-xs text-slate-600">
+                        Comments, private attachments and the immutable request history.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate(
+                          `/requests/${selectedRequest.id}/collaboration`,
+                        )
+                      }
+                      className="flex h-10 items-center gap-2 rounded-xl bg-sky-500 px-4 text-xs font-semibold text-slate-950 hover:bg-sky-400"
+                    >
+                      <MessageSquare size={15} />
+                      Open workspace
+                    </button>
+                  </section>
                   <section className="rounded-2xl border border-slate-800 bg-slate-950/55 p-5">
                     <div className="flex items-center gap-3">
                       <GitBranch

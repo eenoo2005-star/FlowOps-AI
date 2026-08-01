@@ -1,0 +1,5034 @@
+
+===== backend\app\Models\InternalRequest.php =====
+
+<?php
+
+namespace App\Models;
+
+use App\Models\Scopes\TenantScope;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
+final class InternalRequest extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'company_id',
+        'request_type_id',
+        'workflow_definition_id',
+        'requester_employee_id',
+        'current_workflow_step_id',
+        'reference_number',
+        'title',
+        'description',
+        'payload',
+        'priority',
+        'status',
+        'submitted_at',
+        'completed_at',
+        'cancelled_at',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'request_type_id' => 'integer',
+            'workflow_definition_id' => 'integer',
+            'requester_employee_id' => 'integer',
+            'current_workflow_step_id' => 'integer',
+            'payload' => 'array',
+            'submitted_at' => 'datetime',
+            'completed_at' => 'datetime',
+            'cancelled_at' => 'datetime',
+        ];
+    }
+
+    protected static function booted(): void
+    {
+        self::addGlobalScope(new TenantScope);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function requestType(): BelongsTo
+    {
+        return $this->belongsTo(RequestType::class);
+    }
+
+    public function workflowDefinition(): BelongsTo
+    {
+        return $this->belongsTo(
+            WorkflowDefinition::class
+        );
+    }
+
+    public function requesterEmployee(): BelongsTo
+    {
+        return $this->belongsTo(
+            Employee::class,
+            'requester_employee_id'
+        );
+    }
+
+    public function currentWorkflowStep(): BelongsTo
+    {
+        return $this->belongsTo(
+            WorkflowStep::class,
+            'current_workflow_step_id'
+        );
+    }
+
+    public function workflowInstance(): HasOne
+    {
+        return $this->hasOne(WorkflowInstance::class);
+    }
+}
+
+===== backend\app\Models\WorkflowTask.php =====
+
+<?php
+
+namespace App\Models;
+
+use App\Models\Scopes\TenantScope;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+final class WorkflowTask extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'company_id',
+        'workflow_instance_id',
+        'workflow_step_id',
+        'assigned_employee_id',
+        'assigned_role',
+        'status',
+        'due_at',
+        'acted_at',
+        'acted_by_employee_id',
+        'decision_note',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'workflow_instance_id' => 'integer',
+            'workflow_step_id' => 'integer',
+            'assigned_employee_id' => 'integer',
+            'due_at' => 'datetime',
+            'acted_at' => 'datetime',
+            'acted_by_employee_id' => 'integer',
+        ];
+    }
+
+    protected static function booted(): void
+    {
+        self::addGlobalScope(new TenantScope);
+    }
+
+    public function workflowInstance(): BelongsTo
+    {
+        return $this->belongsTo(WorkflowInstance::class);
+    }
+
+    public function workflowStep(): BelongsTo
+    {
+        return $this->belongsTo(WorkflowStep::class);
+    }
+
+    public function assignedEmployee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'assigned_employee_id');
+    }
+
+    public function actedByEmployee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'acted_by_employee_id');
+    }
+
+    public function decisions(): HasMany
+    {
+        return $this->hasMany(WorkflowTaskDecision::class)->orderBy('acted_at');
+    }
+}
+
+===== backend\app\Models\WorkflowTaskDecision.php =====
+
+<?php
+
+namespace App\Models;
+
+use App\Models\Scopes\TenantScope;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+final class WorkflowTaskDecision extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'company_id',
+        'workflow_task_id',
+        'acted_by_user_id',
+        'acted_by_employee_id',
+        'decision',
+        'note',
+        'acted_at',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'workflow_task_id' => 'integer',
+            'acted_by_user_id' => 'integer',
+            'acted_by_employee_id' => 'integer',
+            'acted_at' => 'datetime',
+        ];
+    }
+
+    protected static function booted(): void
+    {
+        self::addGlobalScope(new TenantScope);
+    }
+
+    public function workflowTask(): BelongsTo
+    {
+        return $this->belongsTo(WorkflowTask::class);
+    }
+
+    public function actedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'acted_by_user_id');
+    }
+
+    public function actedByEmployee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'acted_by_employee_id');
+    }
+}
+
+===== backend\app\Models\User.php =====
+
+<?php
+
+namespace App\Models;
+
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use Laravel\Sanctum\HasApiTokens;
+use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
+#[Fillable([
+    'company_id',
+    'name',
+    'email',
+    'password',
+])]
+#[Hidden([
+    'password',
+    'remember_token',
+])]
+class User extends Authenticatable
+{
+    /** @use HasFactory<UserFactory> */
+  use HasApiTokens, HasFactory, Notifiable, HasRoles;
+
+    /**
+     * Get the company this user belongs to.
+     */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
+
+    public function employee(): HasOne
+{
+    return $this->hasOne(Employee::class);
+}
+}
+
+===== backend\app\Models\Employee.php =====
+
+<?php
+
+namespace App\Models;
+
+use App\Models\Scopes\TenantScope;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Employee extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'company_id',
+        'department_id',
+        'user_id',
+        'manager_id',
+        'employee_number',
+        'first_name',
+        'last_name',
+        'job_title',
+        'work_email',
+        'phone',
+        'hire_date',
+        'employment_type',
+        'status',
+        'avatar',
+        'notes',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'hire_date' => 'date',
+        ];
+    }
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new TenantScope());
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'manager_id');
+    }
+}
+
+===== backend\app\Models\Scopes\TenantScope.php =====
+
+<?php
+
+namespace App\Models\Scopes;
+
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Scope;
+use Illuminate\Support\Facades\Auth;
+
+class TenantScope implements Scope
+{
+    public function apply(Builder $builder, Model $model): void
+    {
+        $user = Auth::user();
+
+        if ($user !== null && $user->company_id !== null) {
+            $builder->where(
+                $model->qualifyColumn('company_id'),
+                $user->company_id
+            );
+        }
+    }
+}
+
+===== backend\app\Http\Controllers\InternalRequestController.php =====
+
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\IndexInternalRequestRequest;
+use App\Http\Requests\StoreInternalRequestRequest;
+use App\Http\Requests\UpdateInternalRequestRequest;
+use App\Http\Resources\InternalRequestResource;
+use App\Models\InternalRequest;
+use App\Services\InternalRequestService;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
+
+final class InternalRequestController extends Controller
+{
+    public function __construct(
+        private readonly InternalRequestService $service
+    ) {}
+
+    public function index(
+        IndexInternalRequestRequest $request
+    ): AnonymousResourceCollection {
+        Gate::authorize(
+            'viewAny',
+            InternalRequest::class
+        );
+
+        return InternalRequestResource::collection(
+            $this->service->paginate(
+                $request->validated(),
+                $request->user()
+            )
+        );
+    }
+
+    public function store(
+        StoreInternalRequestRequest $request
+    ): InternalRequestResource {
+        Gate::authorize(
+            'create',
+            InternalRequest::class
+        );
+
+        return new InternalRequestResource(
+            $this->service->createDraft(
+                $request->validated(),
+                $request->user()
+            )
+        );
+    }
+
+    public function show(
+        InternalRequest $internalRequest
+    ): InternalRequestResource {
+        Gate::authorize('view', $internalRequest);
+
+        return new InternalRequestResource(
+            $internalRequest->load([
+                'requestType:id,name,code',
+                'requesterEmployee:id,first_name,last_name,employee_number',
+                'workflowDefinition:id,name,code,version',
+                'currentWorkflowStep:id,name,code,step_order',
+
+                'workflowInstance.tasks.workflowStep:id,name,code,step_order',
+
+                'workflowInstance.tasks.assignedEmployee:id,first_name,last_name,employee_number',
+            ])
+        );
+    }
+
+    public function update(
+        UpdateInternalRequestRequest $request,
+        InternalRequest $internalRequest
+    ): InternalRequestResource {
+        Gate::authorize('update', $internalRequest);
+
+        return new InternalRequestResource(
+            $this->service->updateDraft(
+                $internalRequest,
+                $request->validated()
+            )
+        );
+    }
+
+    public function destroy(
+        InternalRequest $internalRequest
+    ): Response {
+        Gate::authorize('delete', $internalRequest);
+
+        $this->service->deleteDraft($internalRequest);
+
+        return response()->noContent();
+    }
+}
+
+===== backend\app\Http\Controllers\InternalRequestActionController.php =====
+
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Resources\InternalRequestResource;
+use App\Models\InternalRequest;
+use App\Services\InternalRequestService;
+use Illuminate\Support\Facades\Gate;
+
+final class InternalRequestActionController extends Controller
+{
+    public function __construct(
+        private readonly InternalRequestService $service
+    ) {}
+
+    public function submit(
+        InternalRequest $internalRequest
+    ): InternalRequestResource {
+        Gate::authorize('submit', $internalRequest);
+
+        return new InternalRequestResource(
+            $this->service->submit(
+                $internalRequest
+            )
+        );
+    }
+}
+
+===== backend\app\Http\Controllers\WorkflowTaskController.php =====
+
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\IndexWorkflowTaskRequest;
+use App\Http\Resources\WorkflowTaskResource;
+use App\Models\WorkflowTask;
+use App\Services\WorkflowTaskService;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Gate;
+
+final class WorkflowTaskController extends Controller
+{
+    public function __construct(
+        private readonly WorkflowTaskService $service
+    ) {}
+
+    public function index(IndexWorkflowTaskRequest $request): AnonymousResourceCollection
+    {
+        Gate::authorize('viewAny', WorkflowTask::class);
+
+        return WorkflowTaskResource::collection(
+            $this->service->paginate($request->validated(), $request->user())
+        );
+    }
+
+    public function show(WorkflowTask $workflowTask): WorkflowTaskResource
+    {
+        Gate::authorize('view', $workflowTask);
+
+        return new WorkflowTaskResource(
+            $this->service->loadForDisplay($workflowTask)
+        );
+    }
+}
+
+===== backend\app\Http\Controllers\WorkflowTaskActionController.php =====
+
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\ApproveWorkflowTaskRequest;
+use App\Http\Requests\RejectWorkflowTaskRequest;
+use App\Http\Resources\WorkflowTaskResource;
+use App\Models\WorkflowTask;
+use App\Services\ApprovalActionService;
+use Illuminate\Support\Facades\Gate;
+
+final class WorkflowTaskActionController extends Controller
+{
+    public function __construct(
+        private readonly ApprovalActionService $service
+    ) {}
+
+    public function approve(
+        ApproveWorkflowTaskRequest $request,
+        WorkflowTask $workflowTask
+    ): WorkflowTaskResource {
+        Gate::authorize('approve', $workflowTask);
+
+        return new WorkflowTaskResource(
+            $this->service->approve(
+                $workflowTask,
+                $request->user(),
+                $request->validated('note')
+            )
+        );
+    }
+
+    public function reject(
+        RejectWorkflowTaskRequest $request,
+        WorkflowTask $workflowTask
+    ): WorkflowTaskResource {
+        Gate::authorize('reject', $workflowTask);
+
+        return new WorkflowTaskResource(
+            $this->service->reject(
+                $workflowTask,
+                $request->user(),
+                $request->validated('note')
+            )
+        );
+    }
+}
+
+===== backend\app\Http\Resources\InternalRequestResource.php =====
+
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+final class InternalRequestResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'company_id' => $this->company_id,
+            'request_type_id' => $this->request_type_id,
+
+            'workflow_definition_id' => $this->workflow_definition_id,
+
+            'requester_employee_id' => $this->requester_employee_id,
+
+            'current_workflow_step_id' => $this->current_workflow_step_id,
+
+            'reference_number' => $this->reference_number,
+            'title' => $this->title,
+            'description' => $this->description,
+            'payload' => $this->payload,
+            'priority' => $this->priority,
+            'status' => $this->status,
+
+            'submitted_at' => $this->submitted_at?->toISOString(),
+
+            'completed_at' => $this->completed_at?->toISOString(),
+
+            'cancelled_at' => $this->cancelled_at?->toISOString(),
+
+            'request_type' => $this->whenLoaded(
+                'requestType',
+                fn () => [
+                    'id' => $this->requestType->id,
+                    'name' => $this->requestType->name,
+                    'code' => $this->requestType->code,
+                ]
+            ),
+
+            'requester_employee' => $this->whenLoaded(
+                'requesterEmployee',
+                fn () => [
+                    'id' => $this->requesterEmployee->id,
+                    'full_name' => trim(
+                        $this->requesterEmployee->first_name
+                        .' '
+                        .$this->requesterEmployee->last_name
+                    ),
+                    'employee_number' => $this->requesterEmployee
+                        ->employee_number,
+                ]
+            ),
+
+            'workflow_definition' => $this->whenLoaded(
+                'workflowDefinition',
+                fn () => [
+                    'id' => $this->workflowDefinition->id,
+                    'name' => $this->workflowDefinition->name,
+                    'code' => $this->workflowDefinition->code,
+                    'version' => $this->workflowDefinition->version,
+                ]
+            ),
+
+            'current_workflow_step' => $this->whenLoaded(
+                'currentWorkflowStep',
+                fn () => $this->currentWorkflowStep ? [
+                    'id' => $this->currentWorkflowStep->id,
+                    'name' => $this->currentWorkflowStep->name,
+                    'code' => $this->currentWorkflowStep->code,
+                    'step_order' => $this->currentWorkflowStep
+                        ->step_order,
+                ] : null
+            ),
+
+            'workflow_instance' => $this->whenLoaded(
+                'workflowInstance',
+                fn () => new WorkflowInstanceResource(
+                    $this->workflowInstance
+                )
+            ),
+
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
+        ];
+    }
+}
+
+===== backend\app\Http\Resources\WorkflowTaskResource.php =====
+
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+final class WorkflowTaskResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
+        $internalRequest = $this->workflowInstance?->internalRequest;
+
+        return [
+            'id' => $this->id,
+            'company_id' => $this->company_id,
+            'workflow_instance_id' => $this->workflow_instance_id,
+            'workflow_step_id' => $this->workflow_step_id,
+            'assigned_employee_id' => $this->assigned_employee_id,
+            'assigned_role' => $this->assigned_role,
+            'status' => $this->status,
+            'due_at' => $this->due_at?->toISOString(),
+            'acted_at' => $this->acted_at?->toISOString(),
+            'decision_note' => $this->decision_note,
+            'can_approve' => $request->user()?->can('approve', $this->resource) ?? false,
+            'can_reject' => $request->user()?->can('reject', $this->resource) ?? false,
+            'workflow_step' => $this->whenLoaded('workflowStep', fn () => [
+                'id' => $this->workflowStep->id,
+                'name' => $this->workflowStep->name,
+                'code' => $this->workflowStep->code,
+                'step_order' => $this->workflowStep->step_order,
+                'approval_mode' => $this->workflowStep->approval_mode,
+                'required_approvals' => $this->workflowStep->required_approvals,
+                'can_reject' => $this->workflowStep->can_reject,
+                'is_final' => $this->workflowStep->is_final,
+            ]),
+            'assigned_employee' => $this->whenLoaded(
+                'assignedEmployee',
+                fn () => $this->assignedEmployee ? [
+                    'id' => $this->assignedEmployee->id,
+                    'full_name' => trim(
+                        $this->assignedEmployee->first_name.' '.$this->assignedEmployee->last_name
+                    ),
+                    'employee_number' => $this->assignedEmployee->employee_number,
+                ] : null
+            ),
+            'internal_request' => $internalRequest ? [
+                'id' => $internalRequest->id,
+                'reference_number' => $internalRequest->reference_number,
+                'title' => $internalRequest->title,
+                'description' => $internalRequest->description,
+                'priority' => $internalRequest->priority,
+                'status' => $internalRequest->status,
+                'request_type' => $internalRequest->requestType ? [
+                    'id' => $internalRequest->requestType->id,
+                    'name' => $internalRequest->requestType->name,
+                    'code' => $internalRequest->requestType->code,
+                ] : null,
+                'requester_employee' => $internalRequest->requesterEmployee ? [
+                    'id' => $internalRequest->requesterEmployee->id,
+                    'full_name' => trim(
+                        $internalRequest->requesterEmployee->first_name
+                        .' '
+                        .$internalRequest->requesterEmployee->last_name
+                    ),
+                    'employee_number' => $internalRequest->requesterEmployee->employee_number,
+                ] : null,
+            ] : null,
+            'decisions' => WorkflowTaskDecisionResource::collection(
+                $this->whenLoaded('decisions')
+            ),
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
+        ];
+    }
+}
+
+===== backend\app\Services\InternalRequestService.php =====
+
+<?php
+
+namespace App\Services;
+
+use App\Models\Employee;
+use App\Models\InternalRequest;
+use App\Models\RequestType;
+use App\Models\User;
+use App\Models\WorkflowInstance;
+use App\Models\WorkflowTask;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
+final class InternalRequestService
+{
+    public function __construct(
+        private readonly WorkflowAssignmentResolver $resolver
+    ) {}
+
+    public function paginate(
+        array $filters,
+        User $user
+    ): LengthAwarePaginator {
+        $query = InternalRequest::query()
+            ->with([
+                'requestType:id,name,code',
+                'requesterEmployee:id,first_name,last_name,employee_number',
+                'workflowDefinition:id,name,code,version',
+                'currentWorkflowStep:id,name,code,step_order',
+            ]);
+
+        if (! $user->can('requests.view_all')) {
+            $query->whereHas(
+                'requesterEmployee',
+                fn (Builder $employeeQuery) => $employeeQuery->where(
+                    'user_id',
+                    $user->id
+                )
+            );
+        }
+
+        $search = mb_strtolower(
+            trim((string) ($filters['search'] ?? ''))
+        );
+
+        if ($search !== '') {
+            $likeSearch = "%{$search}%";
+
+            $query->where(
+                function (Builder $searchQuery) use ($likeSearch): void {
+                    $searchQuery
+                        ->whereRaw(
+                            'LOWER(reference_number) LIKE ?',
+                            [$likeSearch]
+                        )
+                        ->orWhereRaw(
+                            'LOWER(title) LIKE ?',
+                            [$likeSearch]
+                        )
+                        ->orWhereRaw(
+                            "LOWER(COALESCE(description, '')) LIKE ?",
+                            [$likeSearch]
+                        );
+                }
+            );
+        }
+
+        $status = (string) ($filters['status'] ?? 'all');
+
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        $priority = (string) (
+            $filters['priority'] ?? 'all'
+        );
+
+        if ($priority !== 'all') {
+            $query->where('priority', $priority);
+        }
+
+        if (! empty($filters['request_type_id'])) {
+            $query->where(
+                'request_type_id',
+                (int) $filters['request_type_id']
+            );
+        }
+
+        return $query
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(
+                min(
+                    max(
+                        (int) ($filters['per_page'] ?? 15),
+                        5
+                    ),
+                    100
+                )
+            )
+            ->appends($filters);
+    }
+
+    public function createDraft(
+        array $data,
+        User $user
+    ): InternalRequest {
+        $requester = $this->resolveRequester(
+            $data['requester_employee_id'] ?? null,
+            $user
+        );
+
+        $requestType = RequestType::query()
+            ->with('workflowDefinition')
+            ->findOrFail($data['request_type_id']);
+
+        if (! $requestType->is_active) {
+            throw ValidationException::withMessages([
+                'request_type_id' => [
+                    'The selected request type is inactive.',
+                ],
+            ]);
+        }
+
+        if (! $requestType->workflowDefinition->is_active) {
+            throw ValidationException::withMessages([
+                'request_type_id' => [
+                    'The selected request type uses an inactive workflow.',
+                ],
+            ]);
+        }
+
+        unset($data['requester_employee_id']);
+
+        return InternalRequest::query()
+            ->create([
+                ...$data,
+                'company_id' => (int) $user->company_id,
+                'request_type_id' => $requestType->id,
+                'workflow_definition_id' => $requestType->workflow_definition_id,
+                'requester_employee_id' => $requester->id,
+                'reference_number' => $this->generateReferenceNumber(
+                    (int) $user->company_id
+                ),
+                'status' => 'draft',
+            ])
+            ->load([
+                'requestType:id,name,code',
+                'requesterEmployee:id,first_name,last_name,employee_number',
+                'workflowDefinition:id,name,code,version',
+                'currentWorkflowStep:id,name,code,step_order',
+            ]);
+    }
+
+    public function updateDraft(
+        InternalRequest $internalRequest,
+        array $data
+    ): InternalRequest {
+        if ($internalRequest->status !== 'draft') {
+            throw ValidationException::withMessages([
+                'status' => [
+                    'Only draft requests can be updated.',
+                ],
+            ]);
+        }
+
+        $internalRequest->update($data);
+
+        return $internalRequest
+            ->fresh()
+            ->load([
+                'requestType:id,name,code',
+                'requesterEmployee:id,first_name,last_name,employee_number',
+                'workflowDefinition:id,name,code,version',
+                'currentWorkflowStep:id,name,code,step_order',
+            ]);
+    }
+
+    public function submit(
+        InternalRequest $internalRequest
+    ): InternalRequest {
+        return DB::transaction(
+            function () use ($internalRequest): InternalRequest {
+                $lockedRequest = InternalRequest::query()
+                    ->whereKey($internalRequest->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if ($lockedRequest->status !== 'draft') {
+                    throw ValidationException::withMessages([
+                        'status' => [
+                            'Only draft requests can be submitted.',
+                        ],
+                    ]);
+                }
+
+                $lockedRequest->load([
+                    'requesterEmployee',
+                    'workflowDefinition.steps',
+                ]);
+
+                $workflowDefinition =
+                    $lockedRequest->workflowDefinition;
+
+                if (! $workflowDefinition->is_active) {
+                    throw ValidationException::withMessages([
+                        'workflow' => [
+                            'The workflow is inactive.',
+                        ],
+                    ]);
+                }
+
+                $firstStep = $workflowDefinition
+                    ->steps
+                    ->sortBy('step_order')
+                    ->first();
+
+                if ($firstStep === null) {
+                    throw ValidationException::withMessages([
+                        'workflow' => [
+                            'The workflow does not contain approval steps.',
+                        ],
+                    ]);
+                }
+
+                $assignment = $this->resolver->resolve(
+                    $firstStep,
+                    $lockedRequest->requesterEmployee
+                );
+
+                $now = now();
+
+                $workflowInstance =
+                    WorkflowInstance::query()->create([
+                        'company_id' => $lockedRequest->company_id,
+                        'internal_request_id' => $lockedRequest->id,
+                        'workflow_definition_id' => $workflowDefinition->id,
+                        'current_workflow_step_id' => $firstStep->id,
+                        'status' => 'active',
+                        'started_at' => $now,
+                    ]);
+
+                WorkflowTask::query()->create([
+                    'company_id' => $lockedRequest->company_id,
+                    'workflow_instance_id' => $workflowInstance->id,
+                    'workflow_step_id' => $firstStep->id,
+                    'assigned_employee_id' => $assignment[
+                            'assigned_employee_id'
+                        ],
+                    'assigned_role' => $assignment['assigned_role'],
+                    'status' => 'pending',
+                    'due_at' => $firstStep->sla_hours
+                        ? $now->copy()->addHours(
+                            $firstStep->sla_hours
+                        )
+                        : null,
+                ]);
+
+                $lockedRequest->update([
+                    'status' => 'in_review',
+                    'current_workflow_step_id' => $firstStep->id,
+                    'submitted_at' => $now,
+                ]);
+
+                return $lockedRequest
+                    ->fresh()
+                    ->load([
+                        'requestType:id,name,code',
+                        'requesterEmployee:id,first_name,last_name,employee_number',
+                        'workflowDefinition:id,name,code,version',
+                        'currentWorkflowStep:id,name,code,step_order',
+
+                        'workflowInstance.tasks.workflowStep:id,name,code,step_order',
+
+                        'workflowInstance.tasks.assignedEmployee:id,first_name,last_name,employee_number',
+                    ]);
+            }
+        );
+    }
+
+    public function deleteDraft(
+        InternalRequest $internalRequest
+    ): void {
+        if ($internalRequest->status !== 'draft') {
+            throw ValidationException::withMessages([
+                'status' => [
+                    'Only draft requests can be deleted.',
+                ],
+            ]);
+        }
+
+        $internalRequest->delete();
+    }
+
+    private function resolveRequester(
+        ?int $requestedEmployeeId,
+        User $user
+    ): Employee {
+        if ($requestedEmployeeId !== null) {
+            $requester = Employee::query()
+                ->findOrFail($requestedEmployeeId);
+
+            $isOwnEmployee =
+                $user->employee?->id === $requester->id;
+
+            if (
+                ! $isOwnEmployee
+                && ! $user->can(
+                    'requests.create_for_others'
+                )
+            ) {
+                throw new AuthorizationException;
+            }
+
+            return $requester;
+        }
+
+        $requester = $user->employee;
+
+        if ($requester === null) {
+            throw ValidationException::withMessages([
+                'requester_employee_id' => [
+                    'This user is not linked to an employee record.',
+                ],
+            ]);
+        }
+
+        return $requester;
+    }
+
+    private function generateReferenceNumber(
+        int $companyId
+    ): string {
+        do {
+            $reference = sprintf(
+                'REQ-%s-%s',
+                now()->format('Ymd'),
+                Str::upper(Str::random(8))
+            );
+        } while (
+            InternalRequest::query()
+                ->where('company_id', $companyId)
+                ->where(
+                    'reference_number',
+                    $reference
+                )
+                ->exists()
+        );
+
+        return $reference;
+    }
+}
+
+===== backend\app\Services\ApprovalActionService.php =====
+
+<?php
+
+namespace App\Services;
+
+use App\Models\InternalRequest;
+use App\Models\User;
+use App\Models\WorkflowInstance;
+use App\Models\WorkflowStep;
+use App\Models\WorkflowTask;
+use App\Models\WorkflowTaskDecision;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+final class ApprovalActionService
+{
+    public function __construct(
+        private readonly WorkflowAssignmentResolver $resolver,
+        private readonly ApprovalEligibilityService $eligibility,
+        private readonly WorkflowTaskService $taskService
+    ) {}
+
+    public function approve(WorkflowTask $workflowTask, User $actor, ?string $note): WorkflowTask
+    {
+        return DB::transaction(function () use ($workflowTask, $actor, $note): WorkflowTask {
+            [$task, $instance, $request, $step] = $this->lockRuntime($workflowTask);
+            $this->ensurePendingRuntime($task, $instance, $request);
+            $this->recordDecision($task, $actor, 'approved', $note);
+
+            $approvalCount = WorkflowTaskDecision::query()
+                ->where('workflow_task_id', $task->id)
+                ->where('decision', 'approved')
+                ->count();
+
+            if ($approvalCount < $this->requiredApprovals($task, $step)) {
+                return $this->taskService->loadForDisplay($task->fresh());
+            }
+
+            $now = now();
+
+            $task->update([
+                'status' => 'approved',
+                'acted_at' => $now,
+                'acted_by_employee_id' => $actor->employee?->id,
+                'decision_note' => $note,
+            ]);
+
+            $nextStep = WorkflowStep::query()
+                ->where('workflow_definition_id', $instance->workflow_definition_id)
+                ->where('step_order', '>', $step->step_order)
+                ->orderBy('step_order')
+                ->first();
+
+            if ($step->is_final || $nextStep === null) {
+                $instance->update(['status' => 'completed', 'completed_at' => $now]);
+                $request->update(['status' => 'approved', 'completed_at' => $now]);
+
+                return $this->taskService->loadForDisplay($task->fresh());
+            }
+
+            $request->load('requesterEmployee');
+            $assignment = $this->resolver->resolve($nextStep, $request->requesterEmployee);
+
+            WorkflowTask::query()->create([
+                'company_id' => $request->company_id,
+                'workflow_instance_id' => $instance->id,
+                'workflow_step_id' => $nextStep->id,
+                'assigned_employee_id' => $assignment['assigned_employee_id'],
+                'assigned_role' => $assignment['assigned_role'],
+                'status' => 'pending',
+                'due_at' => $nextStep->sla_hours
+                    ? $now->copy()->addHours($nextStep->sla_hours)
+                    : null,
+            ]);
+
+            $instance->update(['current_workflow_step_id' => $nextStep->id]);
+            $request->update(['current_workflow_step_id' => $nextStep->id]);
+
+            return $this->taskService->loadForDisplay($task->fresh());
+        });
+    }
+
+    public function reject(WorkflowTask $workflowTask, User $actor, string $note): WorkflowTask
+    {
+        return DB::transaction(function () use ($workflowTask, $actor, $note): WorkflowTask {
+            [$task, $instance, $request, $step] = $this->lockRuntime($workflowTask);
+            $this->ensurePendingRuntime($task, $instance, $request);
+
+            if (! $step->can_reject) {
+                throw ValidationException::withMessages([
+                    'decision' => ['This workflow step does not allow rejection.'],
+                ]);
+            }
+
+            $this->recordDecision($task, $actor, 'rejected', $note);
+            $now = now();
+
+            $task->update([
+                'status' => 'rejected',
+                'acted_at' => $now,
+                'acted_by_employee_id' => $actor->employee?->id,
+                'decision_note' => $note,
+            ]);
+
+            $instance->update(['status' => 'rejected', 'completed_at' => $now]);
+            $request->update(['status' => 'rejected', 'completed_at' => $now]);
+
+            return $this->taskService->loadForDisplay($task->fresh());
+        });
+    }
+
+    private function lockRuntime(WorkflowTask $workflowTask): array
+    {
+        $task = WorkflowTask::query()->whereKey($workflowTask->id)->lockForUpdate()->firstOrFail();
+        $instance = WorkflowInstance::query()->whereKey($task->workflow_instance_id)->lockForUpdate()->firstOrFail();
+        $request = InternalRequest::query()->whereKey($instance->internal_request_id)->lockForUpdate()->firstOrFail();
+        $step = WorkflowStep::query()->findOrFail($task->workflow_step_id);
+
+        return [$task, $instance, $request, $step];
+    }
+
+    private function ensurePendingRuntime(
+        WorkflowTask $task,
+        WorkflowInstance $instance,
+        InternalRequest $request
+    ): void {
+        if ($task->status !== 'pending' || $instance->status !== 'active' || $request->status !== 'in_review') {
+            throw ValidationException::withMessages([
+                'status' => ['This approval task is no longer pending.'],
+            ]);
+        }
+    }
+
+    private function recordDecision(
+        WorkflowTask $task,
+        User $actor,
+        string $decision,
+        ?string $note
+    ): void {
+        $alreadyActed = WorkflowTaskDecision::query()
+            ->where('workflow_task_id', $task->id)
+            ->where('acted_by_user_id', $actor->id)
+            ->exists();
+
+        if ($alreadyActed) {
+            throw ValidationException::withMessages([
+                'decision' => ['You have already acted on this approval task.'],
+            ]);
+        }
+
+        WorkflowTaskDecision::query()->create([
+            'company_id' => $task->company_id,
+            'workflow_task_id' => $task->id,
+            'acted_by_user_id' => $actor->id,
+            'acted_by_employee_id' => $actor->employee?->id,
+            'decision' => $decision,
+            'note' => $note,
+            'acted_at' => now(),
+        ]);
+    }
+
+    private function requiredApprovals(WorkflowTask $task, WorkflowStep $step): int
+    {
+        $eligible = $this->eligibility->eligibleUserCount($task);
+
+        if ($step->approval_mode === 'all') {
+            return max(1, $eligible);
+        }
+
+        $configured = max(1, $step->required_approvals);
+
+        return $eligible <= 0 ? $configured : min($configured, $eligible);
+    }
+}
+
+===== backend\database\seeders\InternalRequestPermissionSeeder.php =====
+
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
+
+final class InternalRequestPermissionSeeder extends Seeder
+{
+    public function run(): void
+    {
+        app(PermissionRegistrar::class)
+            ->forgetCachedPermissions();
+
+        $allPermissionNames = [
+            'request-types.view',
+            'request-types.create',
+            'request-types.update',
+            'request-types.delete',
+            'requests.view',
+            'requests.view_all',
+            'requests.create',
+            'requests.create_for_others',
+            'requests.update',
+            'requests.submit',
+            'requests.delete',
+        ];
+
+        $permissions = collect(
+            $allPermissionNames
+        )->map(
+            fn (string $permission): Permission => Permission::findOrCreate(
+                $permission,
+                'web'
+            )
+        );
+
+        Role::findOrCreate(
+            'system admin',
+            'web'
+        )->givePermissionTo($permissions);
+
+        Role::findOrCreate(
+            'company admin',
+            'web'
+        )->givePermissionTo($permissions);
+
+        Role::findOrCreate(
+            'manager',
+            'web'
+        )->givePermissionTo(
+            $permissions->whereIn(
+                'name',
+                [
+                    'request-types.view',
+                    'requests.view',
+                    'requests.view_all',
+                    'requests.create',
+                    'requests.create_for_others',
+                    'requests.update',
+                    'requests.submit',
+                    'requests.delete',
+                ]
+            )
+        );
+
+        Role::findOrCreate(
+            'employee',
+            'web'
+        )->givePermissionTo(
+            $permissions->whereIn(
+                'name',
+                [
+                    'request-types.view',
+                    'requests.view',
+                    'requests.create',
+                    'requests.update',
+                    'requests.submit',
+                    'requests.delete',
+                ]
+            )
+        );
+
+        app(PermissionRegistrar::class)
+            ->forgetCachedPermissions();
+    }
+}
+
+===== backend\database\seeders\WorkflowTaskPermissionSeeder.php =====
+
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
+
+final class WorkflowTaskPermissionSeeder extends Seeder
+{
+    public function run(): void
+    {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $permissions = collect([
+            'workflow-tasks.view',
+            'workflow-tasks.view_all',
+            'workflow-tasks.approve',
+            'workflow-tasks.reject',
+            'workflow-tasks.act_all',
+        ])->map(
+            fn (string $permission): Permission => Permission::findOrCreate($permission, 'web')
+        );
+
+        Role::findOrCreate('system admin', 'web')->givePermissionTo($permissions);
+        Role::findOrCreate('company admin', 'web')->givePermissionTo($permissions);
+
+        foreach (['manager', 'employee'] as $roleName) {
+            Role::findOrCreate($roleName, 'web')->givePermissionTo(
+                $permissions->whereIn('name', [
+                    'workflow-tasks.view',
+                    'workflow-tasks.approve',
+                    'workflow-tasks.reject',
+                ])
+            );
+        }
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
+}
+
+===== backend\database\seeders\RolePermissionSeeder.php =====
+
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
+
+class RolePermissionSeeder extends Seeder
+{
+    public function run(): void
+    {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $permissions = [
+            'companies.view',
+            'companies.create',
+            'companies.update',
+            'companies.delete',
+
+            'departments.view',
+            'departments.create',
+            'departments.update',
+            'departments.delete',
+
+            'users.view',
+            'users.create',
+            'users.update',
+            'users.delete',
+
+            'employees.view',
+            'employees.create',
+            'employees.update',
+            'employees.delete',
+
+            'roles.view',
+            'roles.manage',
+
+            'workflows.view',
+            'workflows.create',
+            'workflows.update',
+            'workflows.delete',
+
+            'requests.view',
+            'requests.create',
+            'requests.approve',
+            'requests.reject',
+
+            'reports.view',
+            'audit.view',
+        ];
+
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
+        }
+
+        $roles = [
+            'system_admin',
+            'company_admin',
+            'manager',
+            'employee',
+            'executive',
+            'auditor',
+        ];
+
+        foreach ($roles as $roleName) {
+            Role::firstOrCreate([
+                'name' => $roleName,
+                'guard_name' => 'web',
+            ]);
+        }
+
+        Role::findByName('system_admin')->givePermissionTo(Permission::all());
+
+        Role::findByName('company_admin')->givePermissionTo([
+            'companies.view',
+            'companies.update',
+            'users.view',
+            'users.create',
+            'users.update',
+            'users.delete',
+            'roles.view',
+            'roles.manage',
+            'workflows.view',
+            'workflows.create',
+            'workflows.update',
+            'workflows.delete',
+            'requests.view',
+            'requests.create',
+            'requests.approve',
+            'requests.reject',
+            'reports.view',
+            'audit.view',
+            'departments.view',
+            'departments.create',
+            'departments.update',
+            'departments.delete',
+            'employees.view',
+            'employees.create',
+            'employees.update',
+            'employees.delete',
+        ]);
+
+        Role::findByName('manager')->givePermissionTo([
+            'users.view',
+            'workflows.view',
+            'requests.view',
+            'requests.create',
+            'requests.approve',
+            'requests.reject',
+            'reports.view',
+            'departments.view',
+            'employees.view',
+            'employees.update',
+        ]);
+
+        Role::findByName('employee')->givePermissionTo([
+            'workflows.view',
+            'requests.view',
+            'requests.create',
+        ]);
+
+        Role::findByName('executive')->givePermissionTo([
+            'companies.view',
+            'users.view',
+            'workflows.view',
+            'requests.view',
+            'reports.view',
+            'audit.view',
+            'employees.view',
+        ]);
+
+        Role::findByName('auditor')->givePermissionTo([
+            'companies.view',
+            'users.view',
+            'workflows.view',
+            'requests.view',
+            'reports.view',
+            'audit.view',
+            'employees.view',
+        ]);
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->call(SecurityPermissionSeeder::class);
+        $this->call(WorkflowPermissionSeeder::class);
+        $this->call(InternalRequestPermissionSeeder::class);
+        $this->call(WorkflowTaskPermissionSeeder::class);
+        $systemAdmin = \Spatie\Permission\Models\Role::findOrCreate(
+    'system admin',
+    'web'
+);
+
+$systemAdmin->syncPermissions(
+    \Spatie\Permission\Models\Permission::query()
+        ->where('guard_name', 'web')
+        ->get()
+);
+
+app(\Spatie\Permission\PermissionRegistrar::class)
+    ->forgetCachedPermissions();
+    }
+}
+
+===== backend\config\filesystems.php =====
+
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Filesystem Disk
+    |--------------------------------------------------------------------------
+    |
+    | Here you may specify the default filesystem disk that should be used
+    | by the framework. The "local" disk, as well as a variety of cloud
+    | based disks are available to your application for file storage.
+    |
+    */
+
+    'default' => env('FILESYSTEM_DISK', 'local'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Filesystem Disks
+    |--------------------------------------------------------------------------
+    |
+    | Below you may configure as many filesystem disks as necessary, and you
+    | may even configure multiple disks for the same driver. Examples for
+    | most supported storage drivers are configured here for reference.
+    |
+    | Supported drivers: "local", "ftp", "sftp", "s3"
+    |
+    */
+
+    'disks' => [
+
+        'local' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'public' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
+        's3' => [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('AWS_BUCKET'),
+            'url' => env('AWS_URL'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+            'report' => false,
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Symbolic Links
+    |--------------------------------------------------------------------------
+    |
+    | Here you may configure the symbolic links that will be created when the
+    | `storage:link` Artisan command is executed. The array keys should be
+    | the locations of the links and the values should be their targets.
+    |
+    */
+
+    'links' => [
+        public_path('storage') => storage_path('app/public'),
+    ],
+
+];
+
+===== backend\routes\api.php =====
+
+<?php
+
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\Security\SecurityController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\InternalRequestActionController;
+use App\Http\Controllers\InternalRequestController;
+use App\Http\Controllers\RequestTypeController;
+use App\Http\Controllers\WorkflowDefinitionController;
+use App\Http\Controllers\WorkflowStepController;
+use App\Http\Controllers\WorkflowTaskActionController;
+use App\Http\Controllers\WorkflowTaskController;
+use Illuminate\Support\Facades\Route;
+
+// تسجيل الدخول
+Route::post('/login', [AuthController::class, 'login'])
+    ->middleware('throttle:login');
+
+// المسارات المحمية بـ Sanctum
+Route::middleware('auth:sanctum')->group(function (): void {
+
+    // مسارات لوحة التحكم (Dashboard)
+    Route::get('/dashboard/summary', DashboardController::class);
+
+    // مسارات الأمان (Security)
+    Route::prefix('security')->group(function (): void {
+        Route::get('/overview', [SecurityController::class, 'overview']);
+        Route::get('/login-attempts', [SecurityController::class, 'loginAttempts']);
+    });
+
+    // مسارات الحساب والمستخدم
+    Route::get('/user', [AuthController::class, 'user']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    // مسارات الموظفين والأقسام
+    // Workflow definition and step administration
+    Route::apiResource(
+        'workflow-definitions',
+        WorkflowDefinitionController::class
+    )->parameters([
+        'workflow-definitions' => 'workflowDefinition',
+    ]);
+
+    Route::post(
+        '/workflow-definitions/{workflowDefinition}/steps',
+        [WorkflowStepController::class, 'store']
+    );
+
+    Route::patch(
+        '/workflow-definitions/{workflowDefinition}/steps/{workflowStep}',
+        [WorkflowStepController::class, 'update']
+    );
+
+    Route::delete(
+        '/workflow-definitions/{workflowDefinition}/steps/{workflowStep}',
+        [WorkflowStepController::class, 'destroy']
+    );
+    Route::apiResource(
+        'request-types',
+        RequestTypeController::class
+    )->parameters([
+        'request-types' => 'requestType',
+    ]);
+
+    Route::apiResource(
+        'internal-requests',
+        InternalRequestController::class
+    )->parameters([
+        'internal-requests' => 'internalRequest',
+    ]);
+
+    Route::post(
+        '/internal-requests/{internalRequest}/submit',
+        [InternalRequestActionController::class, 'submit']
+    );
+    Route::apiResource(
+        'workflow-tasks',
+        WorkflowTaskController::class
+    )->only([
+        'index',
+        'show',
+    ])->parameters([
+        'workflow-tasks' => 'workflowTask',
+    ]);
+
+    Route::post(
+        '/workflow-tasks/{workflowTask}/approve',
+        [WorkflowTaskActionController::class, 'approve']
+    );
+
+    Route::post(
+        '/workflow-tasks/{workflowTask}/reject',
+        [WorkflowTaskActionController::class, 'reject']
+    );
+    Route::apiResource('employees', EmployeeController::class);
+    Route::apiResource('departments', DepartmentController::class);
+});
+
+===== frontend\src\pages\InternalRequestsPage.tsx =====
+
+import {
+  type FormEvent,
+  useEffect,
+  useState,
+} from 'react'
+import {
+  Navigate,
+  useNavigate,
+} from 'react-router-dom'
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  CircleDot,
+  Clock3,
+  Edit3,
+  FileText,
+  Filter,
+  GitBranch,
+  LoaderCircle,
+  Plus,
+  RefreshCw,
+  Search,
+  Send,
+  Trash2,
+  UserRound,
+  X,
+} from 'lucide-react'
+import type { AxiosError } from 'axios'
+import { authService } from '../services/authService'
+import { employeeService } from '../services/employeeService'
+import { internalRequestService } from '../services/internalRequestService'
+import { requestTypeService } from '../services/requestTypeService'
+import {
+  internalRequestSchema,
+  type InternalRequestFormValues,
+} from '../features/requests/requestSchemas'
+import type { Employee } from '../types/employee'
+import type {
+  CreateInternalRequestPayload,
+  InternalRequest,
+  InternalRequestFilters,
+  InternalRequestStatus,
+  RequestPriority,
+  RequestType,
+  UpdateInternalRequestPayload,
+} from '../types/internalRequest'
+
+interface LaravelErrorResponse {
+  message?: string
+  errors?: Record<string, string[]>
+}
+
+interface RequestDialogProps {
+  request: InternalRequest | null
+  requestTypes: RequestType[]
+  employees: Employee[]
+  canCreateForOthers: boolean
+  isSubmitting: boolean
+  serverError: string | null
+  onClose: () => void
+  onSubmit: (
+    payload:
+      | CreateInternalRequestPayload
+      | UpdateInternalRequestPayload,
+  ) => void
+}
+
+const initialFilters: InternalRequestFilters = {
+  page: 1,
+  search: '',
+  status: 'all',
+  priority: 'all',
+  request_type_id: null,
+  per_page: 15,
+}
+
+const emptyForm: InternalRequestFormValues = {
+  request_type_id: '',
+  requester_employee_id: '',
+  title: '',
+  description: '',
+  priority: 'normal',
+}
+
+const statusLabels: Record<
+  InternalRequestStatus,
+  string
+> = {
+  draft: 'Draft',
+  in_review: 'In review',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  cancelled: 'Cancelled',
+}
+
+function extractErrorMessage(error: unknown): string {
+  const axiosError =
+    error as AxiosError<LaravelErrorResponse>
+
+  const validationErrors =
+    axiosError.response?.data?.errors
+
+  if (validationErrors) {
+    const firstMessage = Object.values(
+      validationErrors,
+    ).flat()[0]
+
+    if (firstMessage) {
+      return firstMessage
+    }
+  }
+
+  return (
+    axiosError.response?.data?.message ??
+    'The operation could not be completed.'
+  )
+}
+
+function nullableString(value: string): string | null {
+  const normalized = value.trim()
+
+  return normalized === '' ? null : normalized
+}
+
+function formatDateTime(value: string | null): string {
+  if (!value) {
+    return 'Not set'
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Not set'
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)
+}
+
+function statusClasses(
+  status: InternalRequestStatus,
+): string {
+  if (status === 'approved') {
+    return 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300'
+  }
+
+  if (status === 'rejected') {
+    return 'border-rose-400/20 bg-rose-500/10 text-rose-300'
+  }
+
+  if (status === 'in_review') {
+    return 'border-sky-400/20 bg-sky-500/10 text-sky-300'
+  }
+
+  if (status === 'cancelled') {
+    return 'border-slate-700 bg-slate-900 text-slate-500'
+  }
+
+  return 'border-amber-400/20 bg-amber-500/10 text-amber-300'
+}
+
+function RequestDialog({
+  request,
+  requestTypes,
+  employees,
+  canCreateForOthers,
+  isSubmitting,
+  serverError,
+  onClose,
+  onSubmit,
+}: RequestDialogProps) {
+  const [form, setForm] =
+    useState<InternalRequestFormValues>(
+      emptyForm,
+    )
+
+  const [errors, setErrors] = useState<
+    Partial<
+      Record<
+        keyof InternalRequestFormValues,
+        string
+      >
+    >
+  >({})
+
+  useEffect(() => {
+    if (request) {
+      setForm({
+        request_type_id:
+          request.request_type_id.toString(),
+        requester_employee_id:
+          request.requester_employee_id.toString(),
+        title: request.title,
+        description: request.description ?? '',
+        priority: request.priority,
+      })
+    } else {
+      setForm(emptyForm)
+    }
+
+    setErrors({})
+  }, [request])
+
+  const handleSubmit = (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault()
+
+    const result =
+      internalRequestSchema.safeParse(form)
+
+    if (!result.success) {
+      const nextErrors: Partial<
+        Record<
+          keyof InternalRequestFormValues,
+          string
+        >
+      > = {}
+
+      for (const issue of result.error.issues) {
+        const field = issue.path[0]
+
+        if (
+          typeof field === 'string' &&
+          nextErrors[
+            field as keyof InternalRequestFormValues
+          ] === undefined
+        ) {
+          nextErrors[
+            field as keyof InternalRequestFormValues
+          ] = issue.message
+        }
+      }
+
+      setErrors(nextErrors)
+
+      return
+    }
+
+    setErrors({})
+
+    if (request) {
+      onSubmit({
+        title: result.data.title,
+        description: nullableString(
+          result.data.description,
+        ),
+        payload: request.payload,
+        priority: result.data.priority,
+      })
+
+      return
+    }
+
+    onSubmit({
+      request_type_id: Number(
+        result.data.request_type_id,
+      ),
+
+      requester_employee_id:
+        result.data.requester_employee_id === ''
+          ? null
+          : Number(
+              result.data.requester_employee_id,
+            ),
+
+      title: result.data.title,
+
+      description: nullableString(
+        result.data.description,
+      ),
+
+      payload: null,
+      priority: result.data.priority,
+    })
+  }
+
+  const fieldClass =
+    'h-11 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 text-sm text-slate-200 outline-none transition placeholder:text-slate-700 focus:border-sky-400/40 disabled:opacity-50'
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 p-4 backdrop-blur-sm">
+      <div className="mx-auto my-4 w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-700/80 bg-[#07101f] shadow-2xl shadow-slate-950">
+        <div className="flex items-center justify-between border-b border-slate-800 p-6">
+          <div>
+            <p className="text-xs uppercase tracking-[0.16em] text-sky-400">
+              Internal request
+            </p>
+
+            <h2 className="mt-2 text-xl font-semibold">
+              {request
+                ? 'Edit draft'
+                : 'Create request draft'}
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="grid h-10 w-10 place-items-center rounded-xl border border-slate-800 text-slate-500 hover:text-slate-200 disabled:opacity-40"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-5 p-6"
+        >
+          {serverError && (
+            <div className="flex items-start gap-3 rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">
+              <AlertTriangle
+                size={18}
+                className="mt-0.5 shrink-0"
+              />
+              <span>{serverError}</span>
+            </div>
+          )}
+
+          <label>
+            <span className="mb-2 block text-xs text-slate-500">
+              Request type
+            </span>
+
+            <select
+              value={form.request_type_id}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  request_type_id:
+                    event.target.value,
+                }))
+              }
+              disabled={request !== null}
+              className={fieldClass}
+            >
+              <option value="">
+                Select request type
+              </option>
+
+              {requestTypes.map((requestType) => (
+                <option
+                  key={requestType.id}
+                  value={requestType.id}
+                >
+                  {requestType.name} (
+                  {requestType.code})
+                </option>
+              ))}
+            </select>
+
+            {errors.request_type_id && (
+              <p className="mt-2 text-xs text-rose-300">
+                {errors.request_type_id}
+              </p>
+            )}
+          </label>
+
+          {canCreateForOthers && (
+            <label>
+              <span className="mb-2 block text-xs text-slate-500">
+                Requester employee
+              </span>
+
+              <select
+                value={form.requester_employee_id}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    requester_employee_id:
+                      event.target.value,
+                  }))
+                }
+                disabled={request !== null}
+                className={fieldClass}
+              >
+                <option value="">
+                  Use my linked employee record
+                </option>
+
+                {employees.map((employee) => (
+                  <option
+                    key={employee.id}
+                    value={employee.id}
+                  >
+                    {employee.full_name} -{' '}
+                    {employee.employee_number}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          <label>
+            <span className="mb-2 block text-xs text-slate-500">
+              Title
+            </span>
+
+            <input
+              value={form.title}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  title: event.target.value,
+                }))
+              }
+              placeholder="Annual leave for three days"
+              className={fieldClass}
+            />
+
+            {errors.title && (
+              <p className="mt-2 text-xs text-rose-300">
+                {errors.title}
+              </p>
+            )}
+          </label>
+
+          <label>
+            <span className="mb-2 block text-xs text-slate-500">
+              Description
+            </span>
+
+            <textarea
+              rows={5}
+              value={form.description}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  description: event.target.value,
+                }))
+              }
+              className="w-full resize-none rounded-xl border border-slate-800 bg-slate-950 px-3 py-3 text-sm leading-6 text-slate-200 outline-none transition focus:border-sky-400/40"
+            />
+          </label>
+
+          <label>
+            <span className="mb-2 block text-xs text-slate-500">
+              Priority
+            </span>
+
+            <select
+              value={form.priority}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  priority:
+                    event.target.value as RequestPriority,
+                }))
+              }
+              className={fieldClass}
+            >
+              <option value="low">Low</option>
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </label>
+
+          <div className="flex justify-end gap-3 border-t border-slate-800 pt-5">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="h-11 rounded-xl border border-slate-700 px-5 text-sm text-slate-400 disabled:opacity-40"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex h-11 items-center gap-2 rounded-xl bg-sky-500 px-5 text-sm font-semibold text-slate-950 hover:bg-sky-400 disabled:opacity-60"
+            >
+              {isSubmitting && (
+                <LoaderCircle
+                  size={16}
+                  className="animate-spin"
+                />
+              )}
+
+              {request
+                ? 'Save draft'
+                : 'Create draft'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function InternalRequestsPage() {
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  const [draftFilters, setDraftFilters] =
+    useState<InternalRequestFilters>(
+      initialFilters,
+    )
+
+  const [filters, setFilters] =
+    useState<InternalRequestFilters>(
+      initialFilters,
+    )
+
+  const [selectedRequestId, setSelectedRequestId] =
+    useState<number | null>(null)
+
+  const [dialogOpen, setDialogOpen] =
+    useState(false)
+
+  const [editingRequest, setEditingRequest] =
+    useState<InternalRequest | null>(null)
+
+  const [mutationError, setMutationError] =
+    useState<string | null>(null)
+
+  const {
+    data: user,
+    isPending: isUserPending,
+    isError: isUserError,
+  } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: authService.getCurrentUser,
+    retry: false,
+  })
+
+  const canView =
+    user?.permissions?.includes(
+      'requests.view',
+    ) ?? false
+
+  const canCreate =
+    user?.permissions?.includes(
+      'requests.create',
+    ) ?? false
+
+  const canCreateForOthers =
+    user?.permissions?.includes(
+      'requests.create_for_others',
+    ) ?? false
+
+  const canUpdate =
+    user?.permissions?.includes(
+      'requests.update',
+    ) ?? false
+
+  const canSubmit =
+    user?.permissions?.includes(
+      'requests.submit',
+    ) ?? false
+
+  const canDelete =
+    user?.permissions?.includes(
+      'requests.delete',
+    ) ?? false
+
+  const requestsQuery = useQuery({
+    queryKey: ['internal-requests', filters],
+    queryFn: () =>
+      internalRequestService.list(filters),
+    enabled: canView,
+  })
+
+  const selectedRequestQuery = useQuery({
+    queryKey: [
+      'internal-request',
+      selectedRequestId,
+    ],
+    queryFn: () =>
+      internalRequestService.show(
+        selectedRequestId as number,
+      ),
+    enabled:
+      canView && selectedRequestId !== null,
+  })
+
+  const requestTypesQuery = useQuery({
+    queryKey: ['request-types', 'request-options'],
+    queryFn: () =>
+      requestTypeService.list({
+        page: 1,
+        search: '',
+        status: 'active',
+        per_page: 100,
+      }),
+    enabled: canView,
+  })
+
+  const employeeOptionsQuery = useQuery({
+    queryKey: ['employees', 'requester-options'],
+    queryFn: () =>
+      employeeService.list({
+        page: 1,
+        search: '',
+        status: 'active',
+        employment_type: 'all',
+        department_id: null,
+        sort: 'name_asc',
+        per_page: 100,
+      }),
+    enabled:
+      canCreateForOthers && dialogOpen,
+  })
+
+  const refreshRequests = async (
+    requestId?: number,
+  ) => {
+    const operations = [
+      queryClient.invalidateQueries({
+        queryKey: ['internal-requests'],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ['workflow-tasks'],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ['dashboard-summary'],
+      }),
+    ]
+
+    if (requestId !== undefined) {
+      operations.push(
+        queryClient.invalidateQueries({
+          queryKey: [
+            'internal-request',
+            requestId,
+          ],
+        }),
+      )
+    }
+
+    await Promise.all(operations)
+  }
+
+  const createMutation = useMutation({
+    mutationFn: (
+      payload:
+        | CreateInternalRequestPayload
+        | UpdateInternalRequestPayload,
+    ) =>
+      internalRequestService.create(
+        payload as CreateInternalRequestPayload,
+      ),
+
+    onSuccess: async (request) => {
+      setSelectedRequestId(request.id)
+      await refreshRequests(request.id)
+      closeDialog()
+    },
+
+    onError: (error) => {
+      setMutationError(
+        extractErrorMessage(error),
+      )
+    },
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({
+      requestId,
+      payload,
+    }: {
+      requestId: number
+      payload:
+        | CreateInternalRequestPayload
+        | UpdateInternalRequestPayload
+    }) =>
+      internalRequestService.update(
+        requestId,
+        payload as UpdateInternalRequestPayload,
+      ),
+
+    onSuccess: async (request) => {
+      await refreshRequests(request.id)
+      closeDialog()
+    },
+
+    onError: (error) => {
+      setMutationError(
+        extractErrorMessage(error),
+      )
+    },
+  })
+
+  const submitMutation = useMutation({
+    mutationFn: internalRequestService.submit,
+
+    onSuccess: async (request) => {
+      await refreshRequests(request.id)
+    },
+
+    onError: (error) => {
+      window.alert(extractErrorMessage(error))
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: internalRequestService.remove,
+
+    onSuccess: async (_, requestId) => {
+      if (selectedRequestId === requestId) {
+        setSelectedRequestId(null)
+      }
+
+      await refreshRequests()
+    },
+
+    onError: (error) => {
+      window.alert(extractErrorMessage(error))
+    },
+  })
+
+  const closeDialog = () => {
+    if (
+      createMutation.isPending ||
+      updateMutation.isPending
+    ) {
+      return
+    }
+
+    setDialogOpen(false)
+    setEditingRequest(null)
+    setMutationError(null)
+  }
+
+  const openCreate = () => {
+    setEditingRequest(null)
+    setMutationError(null)
+    setDialogOpen(true)
+  }
+
+  const openEdit = (request: InternalRequest) => {
+    setEditingRequest(request)
+    setMutationError(null)
+    setDialogOpen(true)
+  }
+
+  const saveRequest = (
+    payload:
+      | CreateInternalRequestPayload
+      | UpdateInternalRequestPayload,
+  ) => {
+    if (editingRequest) {
+      updateMutation.mutate({
+        requestId: editingRequest.id,
+        payload,
+      })
+
+      return
+    }
+
+    createMutation.mutate(payload)
+  }
+
+  const submitRequest = (
+    request: InternalRequest,
+  ) => {
+    const confirmed = window.confirm(
+      `Submit ${request.reference_number}? The draft will enter its approval workflow.`,
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    submitMutation.mutate(request.id)
+  }
+
+  const removeRequest = (
+    request: InternalRequest,
+  ) => {
+    const confirmed = window.confirm(
+      `Delete draft "${request.title}"?`,
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    deleteMutation.mutate(request.id)
+  }
+
+  const applyFilters = (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault()
+
+    setFilters({
+      ...draftFilters,
+      page: 1,
+    })
+  }
+
+  if (isUserError) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (isUserPending) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-slate-950">
+        <LoaderCircle
+          size={34}
+          className="animate-spin text-sky-400"
+        />
+      </main>
+    )
+  }
+
+  if (!canView) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  const result = requestsQuery.data
+  const requests = result?.data ?? []
+  const selectedRequest =
+    selectedRequestQuery.data
+
+  return (
+    <main className="min-h-screen bg-[#050b18] text-slate-100">
+      <header className="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-xl">
+        <div className="mx-auto flex min-h-20 max-w-[1700px] items-center justify-between gap-4 px-5 py-4 md:px-8">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard')}
+              className="grid h-10 w-10 place-items-center rounded-xl border border-slate-800 bg-slate-900/70 text-slate-400 hover:text-sky-300"
+            >
+              <ArrowLeft size={18} />
+            </button>
+
+            <div className="grid h-11 w-11 place-items-center rounded-xl border border-sky-400/15 bg-sky-500/10 text-sky-300">
+              <FileText size={22} />
+            </div>
+
+            <div>
+              <p className="text-xs text-slate-500">
+                Workflow operations
+              </p>
+
+              <h1 className="font-semibold">
+                Internal Requests
+              </h1>
+            </div>
+          </div>
+
+          {canCreate && (
+            <button
+              type="button"
+              onClick={openCreate}
+              className="flex h-11 items-center gap-2 rounded-xl bg-sky-500 px-4 text-sm font-semibold text-slate-950 hover:bg-sky-400"
+            >
+              <Plus size={17} />
+              New request
+            </button>
+          )}
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-[1700px] p-5 md:p-8">
+        <section className="relative overflow-hidden rounded-3xl border border-sky-400/10 bg-gradient-to-br from-blue-950/65 via-slate-950 to-cyan-950/30 p-7">
+          <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-sky-500/10 blur-3xl" />
+
+          <div className="relative max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-300">
+              Request lifecycle
+            </p>
+
+            <h2 className="mt-4 text-3xl font-bold tracking-tight">
+              Create, submit and track requests
+            </h2>
+
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-400">
+              Draft a request, submit it into the selected
+              workflow and follow its current step and task
+              history.
+            </p>
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-slate-800/80 bg-slate-950/55 p-5">
+          <form
+            onSubmit={applyFilters}
+            className="grid gap-4 xl:grid-cols-[2fr_1fr_1fr_1fr_auto]"
+          >
+            <label>
+              <span className="mb-2 block text-xs text-slate-500">
+                Search requests
+              </span>
+
+              <div className="flex h-11 items-center gap-3 rounded-xl border border-slate-800 bg-slate-950 px-3">
+                <Search
+                  size={16}
+                  className="text-slate-600"
+                />
+
+                <input
+                  value={draftFilters.search}
+                  onChange={(event) =>
+                    setDraftFilters((current) => ({
+                      ...current,
+                      search: event.target.value,
+                    }))
+                  }
+                  placeholder="Reference, title or description"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-slate-200 outline-none placeholder:text-slate-700"
+                />
+              </div>
+            </label>
+
+            <label>
+              <span className="mb-2 block text-xs text-slate-500">
+                Status
+              </span>
+
+              <select
+                value={draftFilters.status}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    status: event.target
+                      .value as InternalRequestFilters['status'],
+                  }))
+                }
+                className="h-11 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 text-sm text-slate-300"
+              >
+                <option value="all">All statuses</option>
+                <option value="draft">Draft</option>
+                <option value="in_review">
+                  In review
+                </option>
+                <option value="approved">
+                  Approved
+                </option>
+                <option value="rejected">
+                  Rejected
+                </option>
+                <option value="cancelled">
+                  Cancelled
+                </option>
+              </select>
+            </label>
+
+            <label>
+              <span className="mb-2 block text-xs text-slate-500">
+                Priority
+              </span>
+
+              <select
+                value={draftFilters.priority}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    priority: event.target
+                      .value as InternalRequestFilters['priority'],
+                  }))
+                }
+                className="h-11 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 text-sm text-slate-300"
+              >
+                <option value="all">
+                  All priorities
+                </option>
+                <option value="low">Low</option>
+                <option value="normal">
+                  Normal
+                </option>
+                <option value="high">High</option>
+                <option value="urgent">
+                  Urgent
+                </option>
+              </select>
+            </label>
+
+            <label>
+              <span className="mb-2 block text-xs text-slate-500">
+                Request type
+              </span>
+
+              <select
+                value={
+                  draftFilters.request_type_id?.toString() ??
+                  ''
+                }
+                onChange={(event) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    request_type_id:
+                      event.target.value === ''
+                        ? null
+                        : Number(event.target.value),
+                  }))
+                }
+                className="h-11 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 text-sm text-slate-300"
+              >
+                <option value="">All types</option>
+
+                {requestTypesQuery.data?.data.map(
+                  (requestType) => (
+                    <option
+                      key={requestType.id}
+                      value={requestType.id}
+                    >
+                      {requestType.name}
+                    </option>
+                  ),
+                )}
+              </select>
+            </label>
+
+            <div className="flex items-end gap-2">
+              <button
+                type="submit"
+                className="flex h-11 items-center gap-2 rounded-xl bg-sky-500 px-4 text-sm font-semibold text-slate-950 hover:bg-sky-400"
+              >
+                <Filter size={16} />
+                Apply
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setDraftFilters(initialFilters)
+                  setFilters(initialFilters)
+                }}
+                className="h-11 rounded-xl border border-slate-800 px-4 text-sm text-slate-400"
+              >
+                Reset
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section className="mt-6 grid gap-6 xl:grid-cols-[430px_minmax(0,1fr)]">
+          <aside className="overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/55">
+            <div className="flex items-center justify-between border-b border-slate-800/80 p-5">
+              <div>
+                <h3 className="font-semibold">
+                  Requests
+                </h3>
+
+                <p className="mt-1 text-xs text-slate-600">
+                  {result?.meta.total ?? 0} requests found
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  void requestsQuery.refetch()
+                }
+                className="grid h-10 w-10 place-items-center rounded-xl border border-slate-800 text-slate-500 hover:text-sky-300"
+              >
+                <RefreshCw
+                  size={16}
+                  className={
+                    requestsQuery.isFetching
+                      ? 'animate-spin'
+                      : ''
+                  }
+                />
+              </button>
+            </div>
+
+            <div className="max-h-[760px] space-y-2 overflow-y-auto p-3">
+              {requestsQuery.isPending ? (
+                <div className="grid min-h-52 place-items-center">
+                  <LoaderCircle
+                    size={28}
+                    className="animate-spin text-sky-400"
+                  />
+                </div>
+              ) : requestsQuery.isError ? (
+                <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">
+                  Requests could not be loaded.
+                </div>
+              ) : requests.length > 0 ? (
+                requests.map((request) => (
+                  <button
+                    key={request.id}
+                    type="button"
+                    onClick={() =>
+                      setSelectedRequestId(request.id)
+                    }
+                    className={`w-full rounded-2xl border p-4 text-left ${
+                      selectedRequestId === request.id
+                        ? 'border-sky-400/30 bg-sky-500/10'
+                        : 'border-slate-800 bg-slate-950/70 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-slate-200">
+                          {request.title}
+                        </p>
+
+                        <p className="mt-1 font-mono text-[11px] text-slate-600">
+                          {request.reference_number}
+                        </p>
+                      </div>
+
+                      <span
+                        className={`rounded-full border px-2 py-1 text-[9px] font-semibold uppercase ${statusClasses(
+                          request.status,
+                        )}`}
+                      >
+                        {statusLabels[request.status]}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between text-[11px] text-slate-600">
+                      <span>
+                        {request.request_type?.name ??
+                          'Unknown type'}
+                      </span>
+
+                      <span className="capitalize">
+                        {request.priority}
+                      </span>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="grid min-h-52 place-items-center text-center">
+                  <div>
+                    <FileText
+                      size={28}
+                      className="mx-auto text-slate-700"
+                    />
+
+                    <p className="mt-4 text-sm text-slate-500">
+                      No requests match the filters.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {result &&
+              result.meta.last_page > 1 && (
+                <div className="flex items-center justify-between border-t border-slate-800/80 p-4">
+                  <p className="text-xs text-slate-600">
+                    Page {result.meta.current_page} of{' '}
+                    {result.meta.last_page}
+                  </p>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={
+                        result.meta.current_page <= 1
+                      }
+                      onClick={() =>
+                        setFilters((current) => ({
+                          ...current,
+                          page:
+                            result.meta.current_page - 1,
+                        }))
+                      }
+                      className="grid h-9 w-9 place-items-center rounded-xl border border-slate-800 text-slate-500 disabled:opacity-30"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={
+                        result.meta.current_page >=
+                        result.meta.last_page
+                      }
+                      onClick={() =>
+                        setFilters((current) => ({
+                          ...current,
+                          page:
+                            result.meta.current_page + 1,
+                        }))
+                      }
+                      className="grid h-9 w-9 place-items-center rounded-xl border border-slate-800 text-slate-500 disabled:opacity-30"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+          </aside>
+
+          <article className="min-h-[660px] overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/55">
+            {selectedRequestId === null ? (
+              <div className="grid min-h-[660px] place-items-center p-8 text-center">
+                <div>
+                  <FileText
+                    size={38}
+                    className="mx-auto text-slate-700"
+                  />
+
+                  <h3 className="mt-5 text-lg font-semibold">
+                    Select a request
+                  </h3>
+
+                  <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
+                    Select a request to inspect its workflow
+                    status and approval task timeline.
+                  </p>
+                </div>
+              </div>
+            ) : selectedRequestQuery.isPending ? (
+              <div className="grid min-h-[660px] place-items-center">
+                <LoaderCircle
+                  size={30}
+                  className="animate-spin text-sky-400"
+                />
+              </div>
+            ) : selectedRequestQuery.isError ||
+              !selectedRequest ? (
+              <div className="grid min-h-[660px] place-items-center p-8 text-center text-rose-200">
+                The selected request could not be loaded.
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-800/80 p-6">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h2 className="text-2xl font-bold">
+                        {selectedRequest.title}
+                      </h2>
+
+                      <span
+                        className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase ${statusClasses(
+                          selectedRequest.status,
+                        )}`}
+                      >
+                        {
+                          statusLabels[
+                            selectedRequest.status
+                          ]
+                        }
+                      </span>
+                    </div>
+
+                    <p className="mt-2 font-mono text-xs text-slate-600">
+                      {selectedRequest.reference_number}
+                    </p>
+                  </div>
+
+                  {selectedRequest.status ===
+                    'draft' && (
+                    <div className="flex gap-2">
+                      {canUpdate && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openEdit(
+                              selectedRequest,
+                            )
+                          }
+                          className="flex h-10 items-center gap-2 rounded-xl border border-slate-700 px-3 text-xs text-slate-400 hover:text-sky-300"
+                        >
+                          <Edit3 size={15} />
+                          Edit
+                        </button>
+                      )}
+
+                      {canSubmit && (
+                        <button
+                          type="button"
+                          disabled={
+                            submitMutation.isPending
+                          }
+                          onClick={() =>
+                            submitRequest(
+                              selectedRequest,
+                            )
+                          }
+                          className="flex h-10 items-center gap-2 rounded-xl bg-emerald-500 px-3 text-xs font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+                        >
+                          <Send size={15} />
+                          Submit
+                        </button>
+                      )}
+
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            removeRequest(
+                              selectedRequest,
+                            )
+                          }
+                          className="grid h-10 w-10 place-items-center rounded-xl border border-slate-700 text-slate-500 hover:text-rose-300"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-6 p-6">
+                  <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                      <UserRound
+                        size={17}
+                        className="text-sky-300"
+                      />
+
+                      <p className="mt-4 text-sm font-semibold">
+                        {selectedRequest
+                          .requester_employee
+                          ?.full_name ??
+                          'Unknown'}
+                      </p>
+
+                      <p className="mt-1 text-xs text-slate-600">
+                        Requester
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                      <FileText
+                        size={17}
+                        className="text-sky-300"
+                      />
+
+                      <p className="mt-4 text-sm font-semibold">
+                        {selectedRequest.request_type
+                          ?.name ??
+                          'Unknown'}
+                      </p>
+
+                      <p className="mt-1 text-xs text-slate-600">
+                        Request type
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                      <CircleDot
+                        size={17}
+                        className="text-sky-300"
+                      />
+
+                      <p className="mt-4 text-sm font-semibold">
+                        {selectedRequest
+                          .current_workflow_step
+                          ?.name ??
+                          'Not started'}
+                      </p>
+
+                      <p className="mt-1 text-xs text-slate-600">
+                        Current step
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                      <Clock3
+                        size={17}
+                        className="text-sky-300"
+                      />
+
+                      <p className="mt-4 text-sm font-semibold">
+                        {formatDateTime(
+                          selectedRequest.submitted_at,
+                        )}
+                      </p>
+
+                      <p className="mt-1 text-xs text-slate-600">
+                        Submitted
+                      </p>
+                    </div>
+                  </section>
+
+                  <section className="rounded-2xl border border-slate-800 bg-slate-950/55 p-5">
+                    <h3 className="font-semibold">
+                      Request description
+                    </h3>
+
+                    <p className="mt-3 text-sm leading-7 text-slate-400">
+                      {selectedRequest.description ??
+                        'No description was provided.'}
+                    </p>
+                  </section>
+
+                  <section className="rounded-2xl border border-slate-800 bg-slate-950/55 p-5">
+                    <div className="flex items-center gap-3">
+                      <GitBranch
+                        size={18}
+                        className="text-sky-300"
+                      />
+
+                      <div>
+                        <h3 className="font-semibold">
+                          Workflow timeline
+                        </h3>
+
+                        <p className="mt-1 text-xs text-slate-600">
+                          Runtime tasks created by the
+                          workflow engine.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 space-y-3">
+                      {selectedRequest.workflow_instance
+                        ?.tasks?.length ? (
+                        selectedRequest.workflow_instance.tasks.map(
+                          (task) => (
+                            <div
+                              key={task.id}
+                              className="rounded-2xl border border-slate-800 bg-slate-950 p-4"
+                            >
+                              <div className="flex flex-wrap items-start justify-between gap-4">
+                                <div>
+                                  <p className="font-medium text-slate-300">
+                                    {task.workflow_step
+                                      ?.name ??
+                                      'Workflow task'}
+                                  </p>
+
+                                  <p className="mt-1 font-mono text-[11px] text-slate-700">
+                                    {task.workflow_step
+                                      ?.code}
+                                  </p>
+                                </div>
+
+                                <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-[10px] font-semibold uppercase text-slate-400">
+                                  {task.status}
+                                </span>
+                              </div>
+
+                              <div className="mt-4 grid gap-3 text-xs text-slate-600 sm:grid-cols-3">
+                                <span>
+                                  Assigned:{' '}
+                                  {task.assigned_employee
+                                    ?.full_name ??
+                                    task.assigned_role ??
+                                    'Unassigned'}
+                                </span>
+
+                                <span>
+                                  Due:{' '}
+                                  {formatDateTime(
+                                    task.due_at,
+                                  )}
+                                </span>
+
+                                <span>
+                                  Acted:{' '}
+                                  {formatDateTime(
+                                    task.acted_at,
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+                          ),
+                        )
+                      ) : (
+                        <div className="grid min-h-40 place-items-center rounded-2xl border border-dashed border-slate-800 text-sm text-slate-600">
+                          {selectedRequest.status ===
+                          'draft'
+                            ? 'Submit the draft to start its workflow.'
+                            : 'No runtime tasks are available.'}
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                </div>
+              </>
+            )}
+          </article>
+        </section>
+      </div>
+
+      {dialogOpen && (
+        <RequestDialog
+          request={editingRequest}
+          requestTypes={
+            requestTypesQuery.data?.data ?? []
+          }
+          employees={
+            employeeOptionsQuery.data?.data ?? []
+          }
+          canCreateForOthers={canCreateForOthers}
+          isSubmitting={
+            createMutation.isPending ||
+            updateMutation.isPending
+          }
+          serverError={mutationError}
+          onClose={closeDialog}
+          onSubmit={saveRequest}
+        />
+      )}
+    </main>
+  )
+}
+
+export default InternalRequestsPage
+
+===== frontend\src\pages\ApprovalsPage.tsx =====
+
+import { type FormEvent, useState } from 'react'
+import {
+  Navigate,
+  useNavigate,
+} from 'react-router-dom'
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Check,
+  Inbox,
+  LoaderCircle,
+  RefreshCw,
+  Search,
+  X,
+} from 'lucide-react'
+import type { AxiosError } from 'axios'
+import { authService } from '../services/authService'
+import { approvalTaskService } from '../services/approvalTaskService'
+import type { ApprovalTask } from '../types/approvalTask'
+
+interface ErrorPayload {
+  message?: string
+  errors?: Record<string, string[]>
+}
+
+function errorMessage(error: unknown): string {
+  const axiosError = error as AxiosError<ErrorPayload>
+  const validation =
+    axiosError.response?.data?.errors
+
+  return (
+    (validation
+      ? Object.values(validation).flat()[0]
+      : null) ??
+    axiosError.response?.data?.message ??
+    'The operation could not be completed.'
+  )
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return 'Not set'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Not set'
+
+  return new Intl.DateTimeFormat('en-GB', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)
+}
+
+function ApprovalsPage() {
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  const [search, setSearch] = useState('')
+  const [appliedSearch, setAppliedSearch] =
+    useState('')
+  const [status, setStatus] = useState('pending')
+  const [page, setPage] = useState(1)
+  const [selectedId, setSelectedId] =
+    useState<number | null>(null)
+  const [note, setNote] = useState('')
+  const [actionError, setActionError] =
+    useState<string | null>(null)
+
+  const userQuery = useQuery({
+    queryKey: ['current-user'],
+    queryFn: authService.getCurrentUser,
+    retry: false,
+  })
+
+  const canView =
+    userQuery.data?.permissions?.includes(
+      'workflow-tasks.view',
+    ) ?? false
+
+  const tasksQuery = useQuery({
+    queryKey: [
+      'workflow-tasks',
+      page,
+      appliedSearch,
+      status,
+    ],
+    queryFn: () =>
+      approvalTaskService.list({
+        page,
+        search: appliedSearch,
+        status,
+        per_page: 15,
+      }),
+    enabled: canView,
+  })
+
+  const detailQuery = useQuery({
+    queryKey: ['workflow-task', selectedId],
+    queryFn: () =>
+      approvalTaskService.show(
+        selectedId as number,
+      ),
+    enabled: canView && selectedId !== null,
+  })
+
+  const refresh = async (id: number) => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ['workflow-tasks'],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ['workflow-task', id],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ['internal-requests'],
+      }),
+    ])
+  }
+
+  const approveMutation = useMutation({
+    mutationFn: (task: ApprovalTask) =>
+      approvalTaskService.approve(
+        task.id,
+        note.trim() || null,
+      ),
+    onSuccess: async (task) => {
+      setNote('')
+      setActionError(null)
+      await refresh(task.id)
+    },
+    onError: (error) =>
+      setActionError(errorMessage(error)),
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: (task: ApprovalTask) =>
+      approvalTaskService.reject(
+        task.id,
+        note.trim(),
+      ),
+    onSuccess: async (task) => {
+      setNote('')
+      setActionError(null)
+      await refresh(task.id)
+    },
+    onError: (error) =>
+      setActionError(errorMessage(error)),
+  })
+
+  const applySearch = (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault()
+    setPage(1)
+    setAppliedSearch(search.trim())
+  }
+
+  if (userQuery.isError) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (userQuery.isPending) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-slate-950">
+        <LoaderCircle className="animate-spin text-sky-400" />
+      </main>
+    )
+  }
+
+  if (!canView) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  const result = tasksQuery.data
+  const tasks = result?.data ?? []
+  const selected = detailQuery.data
+  const acting =
+    approveMutation.isPending ||
+    rejectMutation.isPending
+
+  return (
+    <main className="min-h-screen bg-[#050b18] text-slate-100">
+      <header className="border-b border-slate-800 bg-slate-950/90">
+        <div className="mx-auto flex min-h-20 max-w-[1600px] items-center gap-4 px-6">
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard')}
+            className="grid h-10 w-10 place-items-center rounded-xl border border-slate-800 text-slate-400"
+          >
+            <ArrowLeft size={18} />
+          </button>
+
+          <div className="grid h-11 w-11 place-items-center rounded-xl bg-sky-500/10 text-sky-300">
+            <Inbox size={22} />
+          </div>
+
+          <div>
+            <p className="text-xs text-slate-500">
+              Workflow operations
+            </p>
+            <h1 className="font-semibold">
+              Approvals Inbox
+            </h1>
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-[1600px] p-6">
+        <section className="rounded-3xl border border-sky-400/10 bg-gradient-to-br from-blue-950/60 via-slate-950 to-cyan-950/30 p-7">
+          <h2 className="text-3xl font-bold">
+            Review approval tasks
+          </h2>
+          <p className="mt-3 text-sm text-slate-400">
+            Open an assigned task and approve or reject it.
+          </p>
+        </section>
+
+        <form
+          onSubmit={applySearch}
+          className="mt-6 flex flex-wrap gap-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-5"
+        >
+          <div className="flex h-11 min-w-[280px] flex-1 items-center gap-3 rounded-xl border border-slate-800 bg-slate-950 px-3">
+            <Search size={16} className="text-slate-600" />
+            <input
+              value={search}
+              onChange={(event) =>
+                setSearch(event.target.value)
+              }
+              placeholder="Reference, title or step"
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+            />
+          </div>
+
+          <select
+            value={status}
+            onChange={(event) => {
+              setStatus(event.target.value)
+              setPage(1)
+            }}
+            className="h-11 rounded-xl border border-slate-800 bg-slate-950 px-4 text-sm"
+          >
+            <option value="pending">Pending</option>
+            <option value="all">All</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+
+          <button
+            type="submit"
+            className="h-11 rounded-xl bg-sky-500 px-5 text-sm font-semibold text-slate-950"
+          >
+            Apply
+          </button>
+        </form>
+
+        <section className="mt-6 grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
+          <aside className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/60">
+            <div className="flex items-center justify-between border-b border-slate-800 p-5">
+              <div>
+                <h3 className="font-semibold">
+                  Approval tasks
+                </h3>
+                <p className="mt-1 text-xs text-slate-600">
+                  {result?.meta.total ?? 0} found
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void tasksQuery.refetch()}
+                className="grid h-10 w-10 place-items-center rounded-xl border border-slate-800 text-slate-500"
+              >
+                <RefreshCw
+                  size={16}
+                  className={
+                    tasksQuery.isFetching
+                      ? 'animate-spin'
+                      : ''
+                  }
+                />
+              </button>
+            </div>
+
+            <div className="max-h-[650px] space-y-2 overflow-y-auto p-3">
+              {tasksQuery.isPending ? (
+                <div className="grid min-h-52 place-items-center">
+                  <LoaderCircle className="animate-spin text-sky-400" />
+                </div>
+              ) : tasksQuery.isError ? (
+                <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">
+                  Tasks could not be loaded.
+                </div>
+              ) : tasks.length === 0 ? (
+                <div className="grid min-h-52 place-items-center text-sm text-slate-500">
+                  No tasks match the filters.
+                </div>
+              ) : (
+                tasks.map((task) => (
+                  <button
+                    key={task.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedId(task.id)
+                      setNote('')
+                      setActionError(null)
+                    }}
+                    className={`w-full rounded-2xl border p-4 text-left ${
+                      selectedId === task.id
+                        ? 'border-sky-400/30 bg-sky-500/10'
+                        : 'border-slate-800 bg-slate-950'
+                    }`}
+                  >
+                    <p className="font-medium">
+                      {task.internal_request?.title ??
+                        'Approval request'}
+                    </p>
+                    <p className="mt-1 font-mono text-[11px] text-slate-600">
+                      {task.internal_request
+                        ?.reference_number ??
+                        `TASK-${task.id}`}
+                    </p>
+                    <p className="mt-4 text-xs text-slate-400">
+                      {task.workflow_step?.name ??
+                        'Workflow step'}
+                    </p>
+                    <p className="mt-2 text-[10px] uppercase text-amber-300">
+                      {task.status}
+                    </p>
+                  </button>
+                ))
+              )}
+            </div>
+
+            {result && result.meta.last_page > 1 && (
+              <div className="flex items-center justify-between border-t border-slate-800 p-4">
+                <span className="text-xs text-slate-600">
+                  Page {result.meta.current_page} of{' '}
+                  {result.meta.last_page}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={page <= 1}
+                    onClick={() =>
+                      setPage((current) => current - 1)
+                    }
+                    className="rounded-lg border border-slate-800 px-3 py-2 text-xs disabled:opacity-30"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    disabled={
+                      page >= result.meta.last_page
+                    }
+                    onClick={() =>
+                      setPage((current) => current + 1)
+                    }
+                    className="rounded-lg border border-slate-800 px-3 py-2 text-xs disabled:opacity-30"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </aside>
+
+          <article className="min-h-[600px] rounded-2xl border border-slate-800 bg-slate-950/60">
+            {selectedId === null ? (
+              <div className="grid min-h-[600px] place-items-center text-center">
+                <div>
+                  <Inbox
+                    size={38}
+                    className="mx-auto text-slate-700"
+                  />
+                  <h3 className="mt-5 text-lg font-semibold">
+                    Select a task
+                  </h3>
+                </div>
+              </div>
+            ) : detailQuery.isPending ? (
+              <div className="grid min-h-[600px] place-items-center">
+                <LoaderCircle className="animate-spin text-sky-400" />
+              </div>
+            ) : detailQuery.isError || !selected ? (
+              <div className="grid min-h-[600px] place-items-center text-rose-200">
+                The task could not be loaded.
+              </div>
+            ) : (
+              <div>
+                <div className="border-b border-slate-800 p-6">
+                  <h2 className="text-2xl font-bold">
+                    {selected.internal_request?.title ??
+                      'Approval request'}
+                  </h2>
+                  <p className="mt-2 font-mono text-xs text-slate-600">
+                    {selected.internal_request
+                      ?.reference_number}
+                  </p>
+                </div>
+
+                <div className="space-y-5 p-6">
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
+                      <p className="text-xs text-slate-600">
+                        Requester
+                      </p>
+                      <p className="mt-2 text-sm">
+                        {selected.internal_request
+                          ?.requester_employee
+                          ?.full_name ?? 'Unknown'}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
+                      <p className="text-xs text-slate-600">
+                        Current step
+                      </p>
+                      <p className="mt-2 text-sm">
+                        {selected.workflow_step?.name ??
+                          'Unknown'}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
+                      <p className="text-xs text-slate-600">
+                        Due
+                      </p>
+                      <p className="mt-2 text-sm">
+                        {formatDate(selected.due_at)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
+                    <h3 className="font-semibold">
+                      Request description
+                    </h3>
+                    <p className="mt-3 text-sm leading-7 text-slate-400">
+                      {selected.internal_request
+                        ?.description ??
+                        'No description was provided.'}
+                    </p>
+                  </div>
+
+                  {selected.status === 'pending' &&
+                    (selected.can_approve ||
+                      selected.can_reject) && (
+                      <div className="rounded-2xl border border-sky-400/15 bg-sky-500/5 p-5">
+                        <h3 className="font-semibold">
+                          Record decision
+                        </h3>
+
+                        {actionError && (
+                          <div className="mt-4 flex gap-3 rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">
+                            <AlertTriangle size={17} />
+                            <span>{actionError}</span>
+                          </div>
+                        )}
+
+                        <textarea
+                          rows={4}
+                          value={note}
+                          onChange={(event) =>
+                            setNote(event.target.value)
+                          }
+                          placeholder="Optional approval note or required rejection reason"
+                          className="mt-4 w-full resize-none rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm outline-none"
+                        />
+
+                        <div className="mt-4 flex justify-end gap-3">
+                          {selected.can_reject && (
+                            <button
+                              type="button"
+                              disabled={acting}
+                              onClick={() => {
+                                if (note.trim().length < 3) {
+                                  setActionError(
+                                    'A rejection reason is required.',
+                                  )
+                                  return
+                                }
+                                rejectMutation.mutate(selected)
+                              }}
+                              className="flex h-11 items-center gap-2 rounded-xl border border-rose-400/30 px-5 text-sm text-rose-300 disabled:opacity-50"
+                            >
+                              <X size={16} />
+                              Reject
+                            </button>
+                          )}
+
+                          {selected.can_approve && (
+                            <button
+                              type="button"
+                              disabled={acting}
+                              onClick={() =>
+                                approveMutation.mutate(
+                                  selected,
+                                )
+                              }
+                              className="flex h-11 items-center gap-2 rounded-xl bg-emerald-500 px-5 text-sm font-semibold text-slate-950 disabled:opacity-50"
+                            >
+                              <Check size={16} />
+                              Approve
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                </div>
+              </div>
+            )}
+          </article>
+        </section>
+      </div>
+    </main>
+  )
+}
+
+export default ApprovalsPage
+
+===== frontend\src\services\internalRequestService.ts =====
+
+import apiClient from '../api/client'
+import type {
+  CreateInternalRequestPayload,
+  InternalRequest,
+  InternalRequestFilters,
+  PaginatedInternalRequests,
+  UpdateInternalRequestPayload,
+} from '../types/internalRequest'
+
+function buildParameters(
+  filters: InternalRequestFilters,
+): Record<string, string | number> {
+  const parameters: Record<string, string | number> = {
+    page: filters.page,
+    status: filters.status,
+    priority: filters.priority,
+    per_page: filters.per_page,
+  }
+
+  const search = filters.search.trim()
+
+  if (search !== '') {
+    parameters.search = search
+  }
+
+  if (filters.request_type_id !== null) {
+    parameters.request_type_id =
+      filters.request_type_id
+  }
+
+  return parameters
+}
+
+export const internalRequestService = {
+  async list(
+    filters: InternalRequestFilters,
+  ): Promise<PaginatedInternalRequests> {
+    const response =
+      await apiClient.get<PaginatedInternalRequests>(
+        '/internal-requests',
+        {
+          params: buildParameters(filters),
+        },
+      )
+
+    return response.data
+  },
+
+  async show(
+    requestId: number,
+  ): Promise<InternalRequest> {
+    const response = await apiClient.get<{
+      data: InternalRequest
+    }>(`/internal-requests/${requestId}`)
+
+    return response.data.data
+  },
+
+  async create(
+    payload: CreateInternalRequestPayload,
+  ): Promise<InternalRequest> {
+    const response = await apiClient.post<{
+      data: InternalRequest
+    }>('/internal-requests', payload)
+
+    return response.data.data
+  },
+
+  async update(
+    requestId: number,
+    payload: UpdateInternalRequestPayload,
+  ): Promise<InternalRequest> {
+    const response = await apiClient.patch<{
+      data: InternalRequest
+    }>(`/internal-requests/${requestId}`, payload)
+
+    return response.data.data
+  },
+
+  async remove(requestId: number): Promise<void> {
+    await apiClient.delete(
+      `/internal-requests/${requestId}`,
+    )
+  },
+
+  async submit(
+    requestId: number,
+  ): Promise<InternalRequest> {
+    const response = await apiClient.post<{
+      data: InternalRequest
+    }>(
+      `/internal-requests/${requestId}/submit`,
+    )
+
+    return response.data.data
+  },
+}
+
+===== frontend\src\services\approvalTaskService.ts =====
+
+import apiClient from '../api/client'
+import type {
+  ApprovalTask,
+  PaginatedApprovalTasks,
+} from '../types/approvalTask'
+
+interface ApprovalTaskListParameters {
+  page: number
+  search: string
+  status: string
+  per_page: number
+}
+
+function buildParameters(
+  filters: ApprovalTaskListParameters,
+): Record<string, string | number> {
+  const parameters: Record<string, string | number> = {
+    page: filters.page,
+    status: filters.status,
+    per_page: filters.per_page,
+  }
+
+  const search = filters.search.trim()
+
+  if (search !== '') {
+    parameters.search = search
+  }
+
+  return parameters
+}
+
+export const approvalTaskService = {
+  async list(
+    filters: ApprovalTaskListParameters,
+  ): Promise<PaginatedApprovalTasks> {
+    const response =
+      await apiClient.get<PaginatedApprovalTasks>(
+        '/workflow-tasks',
+        {
+          params: buildParameters(filters),
+        },
+      )
+
+    return response.data
+  },
+
+  async show(id: number): Promise<ApprovalTask> {
+    const response = await apiClient.get<{
+      data: ApprovalTask
+    }>(`/workflow-tasks/${id}`)
+
+    return response.data.data
+  },
+
+  async approve(
+    id: number,
+    note: string | null,
+  ): Promise<ApprovalTask> {
+    const response = await apiClient.post<{
+      data: ApprovalTask
+    }>(
+      `/workflow-tasks/${id}/approve`,
+      { note },
+    )
+
+    return response.data.data
+  },
+
+  async reject(
+    id: number,
+    note: string,
+  ): Promise<ApprovalTask> {
+    const response = await apiClient.post<{
+      data: ApprovalTask
+    }>(
+      `/workflow-tasks/${id}/reject`,
+      { note },
+    )
+
+    return response.data.data
+  },
+}
+
+===== frontend\src\types\internalRequest.ts =====
+
+export type RequestPriority =
+  | 'low'
+  | 'normal'
+  | 'high'
+  | 'urgent'
+
+export type InternalRequestStatus =
+  | 'draft'
+  | 'in_review'
+  | 'approved'
+  | 'rejected'
+  | 'cancelled'
+
+export type InternalRequestStatusFilter =
+  | 'all'
+  | InternalRequestStatus
+
+export type RequestPriorityFilter =
+  | 'all'
+  | RequestPriority
+
+export interface RequestTypeWorkflow {
+  id: number
+  name: string
+  code: string
+  version: number
+  is_active: boolean
+}
+
+export interface RequestType {
+  id: number
+  company_id: number
+  workflow_definition_id: number
+  name: string
+  code: string
+  description: string | null
+  instructions: string | null
+  is_active: boolean
+  workflow_definition: RequestTypeWorkflow | null
+  created_at: string | null
+  updated_at: string | null
+}
+
+export interface RequestTypePayload {
+  workflow_definition_id: number
+  name: string
+  code: string
+  description: string | null
+  instructions: string | null
+  is_active: boolean
+}
+
+export interface RequestTypeFilters {
+  page: number
+  search: string
+  status: 'all' | 'active' | 'inactive'
+  per_page: number
+}
+
+export interface RequesterEmployee {
+  id: number
+  full_name: string
+  employee_number: string
+}
+
+export interface InternalRequestWorkflow {
+  id: number
+  name: string
+  code: string
+  version: number
+}
+
+export interface CurrentWorkflowStep {
+  id: number
+  name: string
+  code: string
+  step_order: number
+}
+
+export interface RuntimeTaskStep {
+  id: number
+  name: string
+  code: string
+  step_order: number
+}
+
+export interface RuntimeTaskEmployee {
+  id: number
+  full_name: string
+  employee_number: string
+}
+
+export interface RuntimeTask {
+  id: number
+  workflow_instance_id: number
+  workflow_step_id: number
+  assigned_employee_id: number | null
+  assigned_role: string | null
+  status: string
+  due_at: string | null
+  acted_at: string | null
+  decision_note: string | null
+  workflow_step: RuntimeTaskStep | null
+  assigned_employee: RuntimeTaskEmployee | null
+}
+
+export interface WorkflowInstance {
+  id: number
+  internal_request_id: number
+  workflow_definition_id: number
+  current_workflow_step_id: number | null
+  status: string
+  started_at: string | null
+  completed_at: string | null
+  tasks: RuntimeTask[]
+}
+
+export interface InternalRequest {
+  id: number
+  company_id: number
+  request_type_id: number
+  workflow_definition_id: number
+  requester_employee_id: number
+  current_workflow_step_id: number | null
+  reference_number: string
+  title: string
+  description: string | null
+  payload: Record<string, unknown> | null
+  priority: RequestPriority
+  status: InternalRequestStatus
+  submitted_at: string | null
+  completed_at: string | null
+  cancelled_at: string | null
+  request_type: {
+    id: number
+    name: string
+    code: string
+  } | null
+  requester_employee: RequesterEmployee | null
+  workflow_definition: InternalRequestWorkflow | null
+  current_workflow_step: CurrentWorkflowStep | null
+  workflow_instance: WorkflowInstance | null
+  created_at: string | null
+  updated_at: string | null
+}
+
+export interface CreateInternalRequestPayload {
+  request_type_id: number
+  requester_employee_id: number | null
+  title: string
+  description: string | null
+  payload: Record<string, unknown> | null
+  priority: RequestPriority
+}
+
+export interface UpdateInternalRequestPayload {
+  title: string
+  description: string | null
+  payload: Record<string, unknown> | null
+  priority: RequestPriority
+}
+
+export interface InternalRequestFilters {
+  page: number
+  search: string
+  status: InternalRequestStatusFilter
+  priority: RequestPriorityFilter
+  request_type_id: number | null
+  per_page: number
+}
+
+export interface PaginationMeta {
+  current_page: number
+  from: number | null
+  last_page: number
+  per_page: number
+  to: number | null
+  total: number
+}
+
+export interface PaginationLinks {
+  first: string | null
+  last: string | null
+  prev: string | null
+  next: string | null
+}
+
+export interface PaginatedRequestTypes {
+  data: RequestType[]
+  links: PaginationLinks
+  meta: PaginationMeta
+}
+
+export interface PaginatedInternalRequests {
+  data: InternalRequest[]
+  links: PaginationLinks
+  meta: PaginationMeta
+}
+
+===== frontend\src\types\approvalTask.ts =====
+
+export type ApprovalTaskStatus = 'pending' | 'approved' | 'rejected'
+
+export interface ApprovalTask {
+  id: number
+  status: ApprovalTaskStatus
+  due_at: string | null
+  can_approve: boolean
+  can_reject: boolean
+  assigned_role: string | null
+  workflow_step: {
+    id: number
+    name: string
+    code: string
+    step_order: number
+  } | null
+  assigned_employee: {
+    id: number
+    full_name: string
+    employee_number: string
+  } | null
+  internal_request: {
+    id: number
+    reference_number: string
+    title: string
+    description: string | null
+    priority: string
+    requester_employee: {
+      id: number
+      full_name: string
+      employee_number: string
+    } | null
+  } | null
+  decisions: {
+    id: number
+    decision: 'approved' | 'rejected'
+    note: string | null
+    acted_at: string | null
+    acted_by_user: {
+      id: number
+      name: string
+      email: string
+    } | null
+  }[]
+}
+
+export interface PaginatedApprovalTasks {
+  data: ApprovalTask[]
+  meta: {
+    current_page: number
+    last_page: number
+    total: number
+  }
+}
+
+===== frontend\src\App.tsx =====
+
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom'
+import ApprovalsPage from './pages/ApprovalsPage'
+import DashboardPage from './pages/DashboardPage'
+import RequestTypesPage from './pages/RequestTypesPage'
+import InternalRequestsPage from './pages/InternalRequestsPage'
+import DepartmentsPage from './pages/DepartmentsPage'
+import EmployeesPage from './pages/EmployeesPage'
+import LoginPage from './pages/LoginPage'
+import SecurityPage from './pages/SecurityPage'
+import WorkflowsPage from './pages/WorkflowsPage'
+import ProtectedRoute from './routes/ProtectedRoute'
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <Navigate to="/dashboard" replace />
+          }
+        />
+
+        <Route
+          path="/login"
+          element={<LoginPage />}
+        />
+
+        <Route element={<ProtectedRoute />}>
+          <Route
+            path="/dashboard"
+            element={<DashboardPage />}
+          />
+          <Route
+  path="/approvals"
+  element={<ApprovalsPage />}
+/>
+
+          <Route
+            path="/departments"
+            element={<DepartmentsPage />}
+          />
+
+          <Route
+            path="/employees"
+            element={<EmployeesPage />}
+          />
+
+          <Route
+            path="/request-types"
+            element={<RequestTypesPage />}
+          />
+
+          <Route
+            path="/requests"
+            element={<InternalRequestsPage />}
+          />
+          <Route
+            path="/workflows"
+            element={<WorkflowsPage />}
+          />
+
+          <Route
+            path="/security"
+            element={<SecurityPage />}
+          />
+        </Route>
+
+        <Route
+          path="*"
+          element={
+            <Navigate to="/dashboard" replace />
+          }
+        />
+      </Routes>
+    </BrowserRouter>
+  )
+}
+
+export default App
+
+===== frontend\src\pages\DashboardPage.tsx =====
+
+import { useState } from 'react'
+import { Navigate, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import {
+  Activity,
+  Bell,
+  Building2,
+    Boxes,
+ChevronRight,
+  Clock3,
+    FileText,
+LayoutDashboard,
+  LogOut,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Users,
+  Workflow,
+  type LucideIcon,
+} from 'lucide-react'
+import { authService } from '../services/authService'
+import { dashboardService } from '../services/dashboardService'
+
+interface NavigationItem {
+  label: string
+  icon: LucideIcon
+  active: boolean
+  path?: string
+  permission?: string
+}
+const navigationItems: NavigationItem[] = [
+  {
+    label: 'Dashboard',
+    icon: LayoutDashboard,
+    active: true,
+    path: '/dashboard',
+  },
+  {
+    label: 'Departments',
+    icon: Building2,
+active: false,
+    path: '/departments',
+    permission: 'departments.view',
+  },
+  {
+    label: 'Employees',
+    icon: Users,
+    active: false,
+    path: '/employees',
+    permission: 'employees.view',
+  },
+  {
+    label: 'Workflows',
+    icon: Workflow,
+    active: false,
+    path: '/workflows',
+    permission: 'workflows.view',
+  },
+  {
+    label: 'Request Types',
+    icon: Boxes,
+    active: false,
+    path: '/request-types',
+    permission: 'request-types.view',
+  },
+  {
+    label: 'Requests',
+    icon: FileText,
+    active: false,
+    path: '/requests',
+    permission: 'requests.view',
+  },
+  {
+    label: 'Security',
+    icon: ShieldCheck,
+    active: false,
+    path: '/security',
+    permission: 'view security dashboard',
+  },
+]
+
+function DashboardPage() {
+  const navigate = useNavigate()
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  const {
+    data: user,
+    isPending,
+    isError,
+  } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: authService.getCurrentUser,
+    retry: false,
+  })
+const {
+  data: dashboardSummary,
+  isPending: isSummaryPending,
+  isError: isSummaryError,
+} = useQuery({
+  queryKey: ['dashboard-summary'],
+  queryFn: dashboardService.getSummary,
+  retry: false,
+})
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+
+    try {
+      await authService.logout()
+    } catch {
+      // The local session must still be cleared if the API is unavailable.
+    } finally {
+      localStorage.removeItem('flowops_token')
+      localStorage.removeItem('flowops_user')
+      sessionStorage.removeItem('flowops_token')
+      sessionStorage.removeItem('flowops_user')
+
+      navigate('/login', { replace: true })
+    }
+  }
+  const summaryValue = (
+  value: number | undefined,
+): string => {
+  if (isSummaryPending) {
+    return '...'
+  }
+
+  if (isSummaryError || value === undefined) {
+    return '—'
+  }
+
+  return value.toLocaleString()
+}
+
+const statistics = [
+  {
+    title: 'Employees',
+    value: summaryValue(
+      dashboardSummary?.employees_total,
+    ),
+    description: 'Company employee records',
+    icon: Users,
+  },
+  {
+    title: 'Departments',
+    value: summaryValue(
+      dashboardSummary?.departments_total,
+    ),
+    description: 'Organization structure',
+    icon: Building2,
+},
+  {
+    title: 'Failed Logins',
+    value: summaryValue(
+      dashboardSummary?.failed_logins_24h,
+    ),
+    description: 'During the last 24 hours',
+    icon: Activity,
+  },
+  {
+    title: 'Elevated Risk',
+    value: summaryValue(
+      dashboardSummary
+        ?.elevated_risk_attempts_24h,
+    ),
+    description: 'Risk score 50 or higher',
+    icon: ShieldCheck,
+  },
+]
+  if (isError) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (isPending) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-slate-950">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-9 w-9 animate-spin rounded-full border-2 border-sky-400/30 border-t-sky-400" />
+
+          <p className="text-sm text-slate-400">
+            Loading your secure workspace...
+          </p>
+        </div>
+      </main>
+    )
+  }
+
+  return (
+    <main className="min-h-screen bg-[#050b18] text-slate-100">
+      <div className="flex min-h-screen">
+        <aside className="hidden w-72 flex-col border-r border-slate-800/80 bg-slate-950/75 p-5 backdrop-blur-xl lg:flex">
+          <div className="flex items-center gap-3 border-b border-slate-800/70 px-2 pb-6">
+            <div className="grid h-11 w-11 place-items-center rounded-xl border border-sky-400/20 bg-gradient-to-br from-blue-600 to-cyan-500 shadow-lg shadow-blue-950">
+              <Workflow size={23} />
+            </div>
+
+            <div>
+              <p className="font-bold tracking-tight">FlowOps AI</p>
+              <p className="text-[10px] uppercase tracking-[0.15em] text-slate-500">
+                Enterprise Operations
+              </p>
+            </div>
+          </div>
+
+          <nav className="mt-7 space-y-2">
+            <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+              Workspace
+            </p>
+
+           {navigationItems
+  .filter(
+    (item) =>
+      !item.permission ||
+      user?.permissions?.includes(item.permission),
+  )
+  .map((item) => {
+              const Icon = item.icon
+
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => {
+  if (item.path) {
+    navigate(item.path)
+  }
+}}
+disabled={!item.path}
+                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition ${
+                    item.active
+                      ? 'border border-sky-400/15 bg-sky-500/10 text-sky-300'
+                      : 'text-slate-500 hover:bg-slate-900 hover:text-slate-300'
+                  }`}
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+
+                  {!item.path && (
+  <span className="ml-auto text-[9px] uppercase tracking-wider text-slate-700">
+    Soon
+  </span>
+)}
+                </button>
+              )
+            })}
+          </nav>
+
+          <div className="mt-auto rounded-2xl border border-slate-800 bg-slate-900/55 p-4">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-sky-500/25 to-blue-600/25 text-sm font-bold text-sky-300">
+                {user?.name?.charAt(0).toUpperCase()}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">
+                  {user?.name}
+                </p>
+
+                <p className="truncate text-xs text-slate-500">
+                  {user?.email}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700/80 px-3 py-2.5 text-xs text-slate-400 transition hover:border-rose-400/30 hover:bg-rose-500/10 hover:text-rose-300"
+            >
+              <LogOut size={15} />
+
+              {isLoggingOut ? 'Signing out...' : 'Sign out'}
+            </button>
+          </div>
+        </aside>
+
+        <section className="min-w-0 flex-1">
+          <header className="flex h-20 items-center justify-between border-b border-slate-800/70 bg-slate-950/30 px-6 backdrop-blur-xl md:px-9">
+            <div>
+              <p className="text-xs text-slate-500">
+                Enterprise workspace
+              </p>
+
+              <h1 className="mt-1 text-lg font-semibold">
+                Operations Dashboard
+              </h1>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                className="hidden h-10 min-w-64 items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/60 px-4 text-left text-xs text-slate-600 md:flex"
+              >
+                <Search size={16} />
+                Search the workspace...
+              </button>
+
+              <button
+                type="button"
+                className="relative grid h-10 w-10 place-items-center rounded-xl border border-slate-800 bg-slate-950/60 text-slate-500 transition hover:text-sky-300"
+              >
+                <Bell size={17} />
+                <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-sky-400" />
+              </button>
+            </div>
+          </header>
+
+          <div className="p-6 md:p-9">
+            <section className="relative overflow-hidden rounded-3xl border border-sky-400/10 bg-gradient-to-br from-blue-950/70 via-slate-900/70 to-cyan-950/40 p-7 shadow-2xl shadow-slate-950 md:p-9">
+              <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-sky-500/10 blur-3xl" />
+
+              <div className="relative max-w-3xl">
+                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-sky-400/15 bg-sky-500/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-sky-300">
+                  <Sparkles size={13} />
+                  FlowOps Intelligence
+                </div>
+
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+                  Welcome back, {user?.name}.
+                </h2>
+
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400">
+                  Your secure operations workspace is active. Department,
+                  employee and workflow intelligence will appear here as your
+                  organization begins using FlowOps AI.
+                </p>
+
+                <div className="mt-7 flex flex-wrap gap-3">
+                  <div className="flex items-center gap-2 rounded-xl border border-emerald-400/15 bg-emerald-500/10 px-4 py-2 text-xs text-emerald-300">
+                    <ShieldCheck size={15} />
+                    Tenant isolation active
+                  </div>
+
+                  <div className="flex items-center gap-2 rounded-xl border border-slate-700/70 bg-slate-950/40 px-4 py-2 text-xs text-slate-400">
+                    <Clock3 size={15} />
+                    Workspace synchronized
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {statistics.map((statistic) => {
+                const Icon = statistic.icon
+
+                return (
+                  <article
+                    key={statistic.title}
+                    className="rounded-2xl border border-slate-800/80 bg-slate-950/50 p-5 transition hover:-translate-y-0.5 hover:border-sky-400/20"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="grid h-10 w-10 place-items-center rounded-xl border border-sky-400/10 bg-sky-500/10 text-sky-300">
+                        <Icon size={18} />
+                      </div>
+
+                      <ChevronRight size={16} className="text-slate-700" />
+                    </div>
+
+                    <p className="mt-6 text-2xl font-bold">
+                      {statistic.value}
+                    </p>
+
+                    <p className="mt-1 text-sm font-medium text-slate-300">
+                      {statistic.title}
+                    </p>
+
+                    <p className="mt-2 text-xs text-slate-600">
+                      {statistic.description}
+                    </p>
+                  </article>
+                )
+              })}
+            </section>
+
+            <section className="mt-7 grid gap-5 xl:grid-cols-[1.4fr_0.8fr]">
+              <article className="rounded-2xl border border-slate-800/80 bg-slate-950/50 p-6">
+                <h3 className="font-semibold">Operational overview</h3>
+
+                <p className="mt-2 text-xs text-slate-600">
+                  Live activity and performance analytics will appear here.
+                </p>
+
+                <div className="mt-8 grid h-52 place-items-center rounded-2xl border border-dashed border-slate-800 bg-slate-950/40">
+                  <div className="text-center">
+                    <Activity
+                      size={27}
+                      className="mx-auto text-sky-400/60"
+                    />
+
+                    <p className="mt-3 text-sm text-slate-400">
+                      Waiting for operational data
+                    </p>
+                  </div>
+                </div>
+              </article>
+
+              <article className="rounded-2xl border border-slate-800/80 bg-slate-950/50 p-6">
+                <h3 className="font-semibold">Security status</h3>
+
+                <div className="mt-6 space-y-4">
+                  {[
+                    'Authentication secured',
+                    'Tenant isolation enabled',
+                    'Role permissions active',
+                    'API services operational',
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-3 rounded-xl border border-slate-800/60 bg-slate-900/40 px-4 py-3"
+                    >
+                      <ShieldCheck
+                        size={16}
+                        className="text-emerald-400"
+                      />
+
+                      <span className="text-xs text-slate-400">
+                        {item}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            </section>
+          </div>
+        </section>
+      </div>
+    </main>
+  )
+}
+
+export default DashboardPage
+
+===== C:\Projects\FlowOps-AI\backend\database\migrations\2026_08_01_024258_create_internal_requests_table.php =====
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create(
+            'internal_requests',
+            function (Blueprint $table): void {
+                $table->id();
+
+                $table->foreignId('company_id')
+                    ->constrained()
+                    ->cascadeOnDelete();
+
+                $table->foreignId('request_type_id')
+                    ->constrained()
+                    ->restrictOnDelete();
+
+                $table->foreignId('workflow_definition_id')
+                    ->constrained()
+                    ->restrictOnDelete();
+
+                $table->foreignId('requester_employee_id')
+                    ->constrained('employees')
+                    ->restrictOnDelete();
+
+                $table->foreignId('current_workflow_step_id')
+                    ->nullable()
+                    ->constrained('workflow_steps')
+                    ->nullOnDelete();
+
+                $table->string('reference_number', 64);
+                $table->string('title');
+                $table->text('description')->nullable();
+                $table->json('payload')->nullable();
+
+                $table->string('priority', 20)
+                    ->default('normal');
+
+                $table->string('status', 30)
+                    ->default('draft');
+
+                $table->timestamp('submitted_at')->nullable();
+                $table->timestamp('completed_at')->nullable();
+                $table->timestamp('cancelled_at')->nullable();
+
+                $table->timestamps();
+
+                $table->unique([
+                    'company_id',
+                    'reference_number',
+                ]);
+
+                $table->index([
+                    'company_id',
+                    'status',
+                ]);
+
+                $table->index([
+                    'company_id',
+                    'requester_employee_id',
+                ]);
+
+                $table->index([
+                    'company_id',
+                    'request_type_id',
+                ]);
+            }
+        );
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('internal_requests');
+    }
+};
+
+===== C:\Projects\FlowOps-AI\backend\database\migrations\2026_08_01_024259_create_workflow_instances_table.php =====
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create(
+            'workflow_instances',
+            function (Blueprint $table): void {
+                $table->id();
+
+                $table->foreignId('company_id')
+                    ->constrained()
+                    ->cascadeOnDelete();
+
+                $table->foreignId('internal_request_id')
+                    ->unique()
+                    ->constrained()
+                    ->cascadeOnDelete();
+
+                $table->foreignId('workflow_definition_id')
+                    ->constrained()
+                    ->restrictOnDelete();
+
+                $table->foreignId('current_workflow_step_id')
+                    ->nullable()
+                    ->constrained('workflow_steps')
+                    ->nullOnDelete();
+
+                $table->string('status', 30)
+                    ->default('active');
+
+                $table->timestamp('started_at');
+                $table->timestamp('completed_at')->nullable();
+
+                $table->timestamps();
+
+                $table->index([
+                    'company_id',
+                    'status',
+                ]);
+            }
+        );
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('workflow_instances');
+    }
+};
+
+===== C:\Projects\FlowOps-AI\backend\database\migrations\2026_08_01_024300_create_workflow_tasks_table.php =====
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create(
+            'workflow_tasks',
+            function (Blueprint $table): void {
+                $table->id();
+
+                $table->foreignId('company_id')
+                    ->constrained()
+                    ->cascadeOnDelete();
+
+                $table->foreignId('workflow_instance_id')
+                    ->constrained()
+                    ->cascadeOnDelete();
+
+                $table->foreignId('workflow_step_id')
+                    ->constrained()
+                    ->restrictOnDelete();
+
+                $table->foreignId('assigned_employee_id')
+                    ->nullable()
+                    ->constrained('employees')
+                    ->nullOnDelete();
+
+                $table->string('assigned_role', 100)
+                    ->nullable();
+
+                $table->string('status', 30)
+                    ->default('pending');
+
+                $table->timestamp('due_at')->nullable();
+                $table->timestamp('acted_at')->nullable();
+
+                $table->foreignId('acted_by_employee_id')
+                    ->nullable()
+                    ->constrained('employees')
+                    ->nullOnDelete();
+
+                $table->text('decision_note')->nullable();
+
+                $table->timestamps();
+
+                $table->index([
+                    'company_id',
+                    'status',
+                ]);
+
+                $table->index([
+                    'company_id',
+                    'assigned_employee_id',
+                    'status',
+                ]);
+
+                $table->index([
+                    'company_id',
+                    'assigned_role',
+                    'status',
+                ]);
+            }
+        );
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('workflow_tasks');
+    }
+};
+
+===== C:\Projects\FlowOps-AI\backend\database\migrations\2026_08_01_024500_create_workflow_task_decisions_table.php =====
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('workflow_task_decisions', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('company_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('workflow_task_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('acted_by_user_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('acted_by_employee_id')->nullable()->constrained('employees')->nullOnDelete();
+            $table->string('decision', 20);
+            $table->text('note')->nullable();
+            $table->timestamp('acted_at');
+            $table->timestamps();
+
+            $table->unique(['workflow_task_id', 'acted_by_user_id']);
+            $table->index(['company_id', 'decision']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('workflow_task_decisions');
+    }
+};

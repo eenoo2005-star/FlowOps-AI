@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
+  ClipboardCheck,
   Activity,
   Bell,
   Building2,
@@ -69,6 +70,12 @@ active: false,
     active: false,
     path: '/requests',
     permission: 'requests.view',
+  },  {
+    label: 'Approvals',
+    icon: ClipboardCheck,
+    active: false,
+    path: '/approvals',
+    permission: 'workflow-tasks.view',
   },
   {
     label: 'Security',

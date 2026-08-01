@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Scopes\TenantScope;
+use App\Services\RequestAuditService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,6 +35,46 @@ final class WorkflowTaskDecision extends Model
     protected static function booted(): void
     {
         self::addGlobalScope(new TenantScope);
+
+        self::created(
+            static function (
+                self $decision
+            ): void {
+                $decision->loadMissing([
+                    'actedByUser',
+                    'workflowTask.workflowInstance.internalRequest',
+                ]);
+
+                $internalRequest = $decision
+                    ->workflowTask
+                    ?->workflowInstance
+                    ?->internalRequest;
+
+                if ($internalRequest === null) {
+                    return;
+                }
+
+                $approved =
+                    $decision->decision === 'approved';
+
+                app(RequestAuditService::class)->record(
+                    $internalRequest,
+                    $approved
+                        ? 'approval.approved'
+                        : 'approval.rejected',
+                    $approved
+                        ? 'Approval task approved.'
+                        : 'Approval task rejected.',
+                    [
+                        'workflow_task_id' => $decision->workflow_task_id,
+                        'workflow_step_id' => $decision->workflowTask
+                            ?->workflow_step_id,
+                        'note' => $decision->note,
+                    ],
+                    $decision->actedByUser
+                );
+            }
+        );
     }
 
     public function workflowTask(): BelongsTo
@@ -43,11 +84,17 @@ final class WorkflowTaskDecision extends Model
 
     public function actedByUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'acted_by_user_id');
+        return $this->belongsTo(
+            User::class,
+            'acted_by_user_id'
+        );
     }
 
     public function actedByEmployee(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'acted_by_employee_id');
+        return $this->belongsTo(
+            Employee::class,
+            'acted_by_employee_id'
+        );
     }
 }

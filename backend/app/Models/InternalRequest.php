@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Models\Scopes\TenantScope;
+use App\Services\RequestAuditService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 final class InternalRequest extends Model
@@ -46,6 +48,97 @@ final class InternalRequest extends Model
     protected static function booted(): void
     {
         self::addGlobalScope(new TenantScope);
+
+        self::created(
+            static function (
+                self $internalRequest
+            ): void {
+                app(RequestAuditService::class)->record(
+                    $internalRequest,
+                    'request.created',
+                    'Request draft created.',
+                    [
+                        'reference_number' => $internalRequest
+                            ->reference_number,
+                    ]
+                );
+            }
+        );
+
+        self::updated(
+            static function (
+                self $internalRequest
+            ): void {
+                $changedFields = collect(
+                    array_keys(
+                        $internalRequest->getChanges()
+                    )
+                )
+                    ->reject(
+                        fn (string $field): bool => $field === 'updated_at'
+                    )
+                    ->values()
+                    ->all();
+
+                if ($changedFields === []) {
+                    return;
+                }
+
+                $eventType = 'request.updated';
+                $summary = 'Request details updated.';
+
+                if (
+                    $internalRequest->wasChanged('status')
+                ) {
+                    [$eventType, $summary] = match (
+                        $internalRequest->status
+                    ) {
+                        'in_review' => [
+                            'request.submitted',
+                            'Request submitted for approval.',
+                        ],
+                        'approved' => [
+                            'request.approved',
+                            'Request completed as approved.',
+                        ],
+                        'rejected' => [
+                            'request.rejected',
+                            'Request completed as rejected.',
+                        ],
+                        'cancelled' => [
+                            'request.cancelled',
+                            'Request cancelled.',
+                        ],
+                        default => [
+                            'request.status_changed',
+                            'Request status changed.',
+                        ],
+                    };
+                }
+
+                app(RequestAuditService::class)->record(
+                    $internalRequest,
+                    $eventType,
+                    $summary,
+                    [
+                        'changed_fields' => $changedFields,
+                        'status' => $internalRequest->status,
+                    ]
+                );
+            }
+        );
+
+        self::deleting(
+            static function (
+                self $internalRequest
+            ): void {
+                app(RequestAuditService::class)->record(
+                    $internalRequest,
+                    'request.deleted',
+                    'Request draft deleted.'
+                );
+            }
+        );
     }
 
     public function company(): BelongsTo
@@ -84,5 +177,26 @@ final class InternalRequest extends Model
     public function workflowInstance(): HasOne
     {
         return $this->hasOne(WorkflowInstance::class);
+    }
+
+    public function comments(): HasMany
+    {
+        return $this
+            ->hasMany(RequestComment::class)
+            ->latest();
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this
+            ->hasMany(RequestAttachment::class)
+            ->latest();
+    }
+
+    public function auditEvents(): HasMany
+    {
+        return $this
+            ->hasMany(RequestAuditEvent::class)
+            ->latest('occurred_at');
     }
 }

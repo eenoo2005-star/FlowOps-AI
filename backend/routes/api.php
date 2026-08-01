@@ -7,6 +7,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\InternalRequestActionController;
 use App\Http\Controllers\InternalRequestController;
+use App\Http\Controllers\RequestCollaborationController;
 use App\Http\Controllers\RequestTypeController;
 use App\Http\Controllers\WorkflowDefinitionController;
 use App\Http\Controllers\WorkflowStepController;
@@ -74,6 +75,35 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post(
         '/internal-requests/{internalRequest}/submit',
         [InternalRequestActionController::class, 'submit']
+    );
+    Route::get(
+        '/internal-requests/{internalRequest}/collaboration',
+        [RequestCollaborationController::class, 'overview']
+    );
+
+    Route::post(
+        '/internal-requests/{internalRequest}/comments',
+        [RequestCollaborationController::class, 'storeComment']
+    );
+
+    Route::delete(
+        '/internal-requests/{internalRequest}/comments/{requestComment}',
+        [RequestCollaborationController::class, 'destroyComment']
+    );
+
+    Route::post(
+        '/internal-requests/{internalRequest}/attachments',
+        [RequestCollaborationController::class, 'storeAttachment']
+    );
+
+    Route::get(
+        '/internal-requests/{internalRequest}/attachments/{requestAttachment}/download',
+        [RequestCollaborationController::class, 'downloadAttachment']
+    );
+
+    Route::delete(
+        '/internal-requests/{internalRequest}/attachments/{requestAttachment}',
+        [RequestCollaborationController::class, 'destroyAttachment']
     );
     Route::apiResource(
         'workflow-tasks',
