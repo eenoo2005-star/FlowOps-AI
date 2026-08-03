@@ -47,6 +47,10 @@ The demo account will use limited permissions and fake data only.
 
 ## Preview
 
+### Secure Login
+
+![FlowOps AI Login](docs/assets/screenshots/00-login.png)
+
 ### Operations Dashboard
 
 ![FlowOps AI Dashboard](docs/assets/screenshots/01-dashboard-light.png)
@@ -62,6 +66,18 @@ The demo account will use limited permissions and fake data only.
 ### Approval Inbox
 
 ![FlowOps AI Approval Inbox](docs/assets/screenshots/05-approval-inbox.png)
+
+### Workflow Builder
+
+![FlowOps AI Workflow Builder](docs/assets/screenshots/11-workflow-builder.png)
+
+### Workflow Approval Steps
+
+![FlowOps AI Workflow Details](docs/assets/screenshots/12-workflow-details.png)
+
+### Request Types
+
+![FlowOps AI Request Types](docs/assets/screenshots/13-request-types.png)
 
 ### Enterprise Administration
 
@@ -82,15 +98,6 @@ The demo account will use limited permissions and fake data only.
 ### Notifications
 
 ![FlowOps AI Notifications](docs/assets/screenshots/10-notifications.png)
-
----
-
-## Screenshots Still To Add Before Public Release
-
-The following screens are part of the system but still need final clean screenshots:
-
-- Workflow Builder
-- Request Types configuration
 
 ---
 
