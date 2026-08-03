@@ -31,6 +31,7 @@ import {
   UserRound,
 } from 'lucide-react'
 import type { AxiosError } from 'axios'
+import { useToast } from '../components/feedback/toastContext'
 import { authService } from '../services/authService'
 import { internalRequestService } from '../services/internalRequestService'
 import { requestCollaborationService } from '../services/requestCollaborationService'
@@ -109,6 +110,7 @@ function auditIcon(event: RequestAuditEvent) {
 }
 
 function RequestCollaborationPage() {
+  const toast = useToast()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { requestId: requestIdValue } = useParams()
@@ -181,10 +183,14 @@ function RequestCollaborationPage() {
       setComment('')
       setOperationError(null)
       await refresh()
+      toast.success('Comment added successfully')
     },
 
-    onError: (error) =>
-      setOperationError(extractError(error)),
+    onError: (error) => {
+      const message = extractError(error)
+      setOperationError(message)
+      toast.error('Comment creation failed', message)
+    },
   })
 
   const deleteCommentMutation = useMutation({
@@ -194,10 +200,16 @@ function RequestCollaborationPage() {
         commentId,
       ),
 
-    onSuccess: refresh,
+    onSuccess: async () => {
+      await refresh()
+      toast.success('Comment deleted successfully')
+    },
 
-    onError: (error) =>
-      setOperationError(extractError(error)),
+    onError: (error) => {
+      const message = extractError(error)
+      setOperationError(message)
+      toast.error('Comment deletion failed', message)
+    },
   })
 
   const uploadMutation = useMutation({
@@ -216,10 +228,14 @@ function RequestCollaborationPage() {
 
       setOperationError(null)
       await refresh()
+      toast.success('Attachment uploaded successfully')
     },
 
-    onError: (error) =>
-      setOperationError(extractError(error)),
+    onError: (error) => {
+      const message = extractError(error)
+      setOperationError(message)
+      toast.error('Attachment upload failed', message)
+    },
   })
 
   const deleteAttachmentMutation = useMutation({
@@ -229,10 +245,16 @@ function RequestCollaborationPage() {
         attachmentId,
       ),
 
-    onSuccess: refresh,
+    onSuccess: async () => {
+      await refresh()
+      toast.success('Attachment deleted successfully')
+    },
 
-    onError: (error) =>
-      setOperationError(extractError(error)),
+    onError: (error) => {
+      const message = extractError(error)
+      setOperationError(message)
+      toast.error('Attachment deletion failed', message)
+    },
   })
 
   const submitComment = (

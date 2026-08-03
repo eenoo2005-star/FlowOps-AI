@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\RequestType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 final class RequestTypeService
 {
@@ -60,6 +61,22 @@ final class RequestTypeService
                 )
             )
             ->appends($filters);
+    }
+
+    public function activeOptions(): Collection
+    {
+        return RequestType::query()
+            ->with([
+                'workflowDefinition:id,name,code,version,is_active',
+            ])
+            ->where('is_active', true)
+            ->whereHas(
+                'workflowDefinition',
+                fn (Builder $query): Builder => $query->where('is_active', true)
+            )
+            ->orderBy('name')
+            ->limit(100)
+            ->get();
     }
 
     public function create(

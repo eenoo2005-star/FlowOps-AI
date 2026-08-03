@@ -39,6 +39,14 @@ export const requestTypeService = {
     return response.data
   },
 
+  async activeOptions(): Promise<RequestType[]> {
+    const response = await apiClient.get<{
+      data: RequestType[]
+    }>('/request-types/options/active')
+
+    return response.data.data
+  },
+
   async create(
     payload: RequestTypePayload,
   ): Promise<RequestType> {

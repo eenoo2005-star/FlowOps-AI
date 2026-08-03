@@ -2,26 +2,27 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  BarChart3,
-  ClipboardCheck,
   Activity,
+  BarChart3,
   Bell,
+  Boxes,
   Building2,
-    Boxes,
-ChevronRight,
+  ChevronRight,
+  ClipboardCheck,
   Clock3,
-    FileText,
-LayoutDashboard,
+  FileText,
+  LayoutDashboard,
   LogOut,
   Search,
   ShieldCheck,
+  Settings2,
   Sparkles,
   Users,
   Workflow,
   type LucideIcon,
 } from 'lucide-react'
 import NotificationBell from '../components/NotificationBell'
-import { openWorkspaceSearch } from '../components/search/WorkspaceSearch'
+import { openWorkspaceSearch } from '../components/search/workspaceSearchEvents'
 import { authService } from '../services/authService'
 import { dashboardService } from '../services/dashboardService'
 
@@ -29,9 +30,19 @@ interface NavigationItem {
   label: string
   icon: LucideIcon
   active: boolean
-  path?: string
+  path: string
   permission?: string
 }
+
+interface DashboardCard {
+  title: string
+  value?: string
+  description: string
+  icon: LucideIcon
+  path: string
+  permission?: string
+}
+
 const navigationItems: NavigationItem[] = [
   {
     label: 'Dashboard',
@@ -56,7 +67,7 @@ const navigationItems: NavigationItem[] = [
   {
     label: 'Departments',
     icon: Building2,
-active: false,
+    active: false,
     path: '/departments',
     permission: 'departments.view',
   },
@@ -87,7 +98,8 @@ active: false,
     active: false,
     path: '/requests',
     permission: 'requests.view',
-  },  {
+  },
+  {
     label: 'Approvals',
     icon: ClipboardCheck,
     active: false,
@@ -100,6 +112,13 @@ active: false,
     active: false,
     path: '/security',
     permission: 'view security dashboard',
+  },
+  {
+    label: 'Administration',
+    icon: Settings2,
+    active: false,
+    path: '/administration',
+    permission: 'administration.view',
   },
 ]
 
@@ -116,15 +135,137 @@ function DashboardPage() {
     queryFn: authService.getCurrentUser,
     retry: false,
   })
-const {
-  data: dashboardSummary,
-  isPending: isSummaryPending,
-  isError: isSummaryError,
-} = useQuery({
-  queryKey: ['dashboard-summary'],
-  queryFn: dashboardService.getSummary,
-  retry: false,
-})
+
+  const {
+    data: dashboardSummary,
+    isPending: isSummaryPending,
+    isError: isSummaryError,
+  } = useQuery({
+    queryKey: ['dashboard-summary'],
+    queryFn: dashboardService.getSummary,
+    retry: false,
+  })
+
+  const canAccess = (permission?: string): boolean =>
+    !permission ||
+    (user?.permissions?.includes(permission) ?? false)
+
+  const summaryValue = (
+    value: number | undefined,
+  ): string => {
+    if (isSummaryPending) {
+      return '...'
+    }
+
+    if (isSummaryError || value === undefined) {
+      return '—'
+    }
+
+    return value.toLocaleString()
+  }
+
+  const statisticCards: DashboardCard[] = [
+    {
+      title: 'Employees',
+      value: summaryValue(
+        dashboardSummary?.employees_total,
+      ),
+      description: 'Company employee records',
+      icon: Users,
+      path: '/employees',
+      permission: 'employees.view',
+    },
+    {
+      title: 'Departments',
+      value: summaryValue(
+        dashboardSummary?.departments_total,
+      ),
+      description: 'Organization structure',
+      icon: Building2,
+      path: '/departments',
+      permission: 'departments.view',
+    },
+    {
+      title: 'Failed Logins',
+      value: summaryValue(
+        dashboardSummary?.failed_logins_24h,
+      ),
+      description: 'During the last 24 hours',
+      icon: Activity,
+      path: '/security',
+      permission: 'view security dashboard',
+    },
+    {
+      title: 'Elevated Risk',
+      value: summaryValue(
+        dashboardSummary?.elevated_risk_attempts_24h,
+      ),
+      description: 'Risk score 50 or higher',
+      icon: ShieldCheck,
+      path: '/security',
+      permission: 'view security dashboard',
+    },
+  ]
+
+  const workspaceCards: DashboardCard[] = [
+    {
+      title: 'Requests',
+      description: 'Create, submit and track internal requests',
+      icon: FileText,
+      path: '/requests',
+      permission: 'requests.view',
+    },
+    {
+      title: 'Approvals',
+      description: 'Review pending workflow tasks',
+      icon: ClipboardCheck,
+      path: '/approvals',
+      permission: 'workflow-tasks.view',
+    },
+    {
+      title: 'Workflows',
+      description: 'Design enterprise approval processes',
+      icon: Workflow,
+      path: '/workflows',
+      permission: 'workflows.view',
+    },
+    {
+      title: 'Request Types',
+      description: 'Manage the request catalog',
+      icon: Boxes,
+      path: '/request-types',
+      permission: 'request-types.view',
+    },
+    {
+      title: 'Analytics',
+      description: 'Inspect SLA, approval and department KPIs',
+      icon: BarChart3,
+      path: '/analytics',
+      permission: 'reports.view',
+    },
+    {
+      title: 'Notifications',
+      description: 'Open assignments, SLA alerts and escalations',
+      icon: Bell,
+      path: '/notifications',
+      permission: 'notifications.view',
+    },
+    {
+      title: 'Security',
+      description: 'Review authentication and risk signals',
+      icon: ShieldCheck,
+      path: '/security',
+      permission: 'view security dashboard',
+    },
+    {
+      title: 'Administration',
+      description: 'Manage roles, permissions, audit logs and settings',
+      icon: Settings2,
+      path: '/administration',
+      permission: 'administration.view',
+    },
+  ]
+
   const handleLogout = async () => {
     setIsLoggingOut(true)
 
@@ -141,55 +282,48 @@ const {
       navigate('/login', { replace: true })
     }
   }
-  const summaryValue = (
-  value: number | undefined,
-): string => {
-  if (isSummaryPending) {
-    return '...'
+
+  const renderCard = (card: DashboardCard) => {
+    const Icon = card.icon
+    const canOpen = canAccess(card.permission)
+
+    return (
+      <button
+        key={card.title}
+        type="button"
+        disabled={!canOpen}
+        onClick={() => navigate(card.path)}
+        aria-label={`Open ${card.title}`}
+        className="group rounded-2xl border border-slate-800/80 bg-slate-950/50 p-5 text-left transition hover:-translate-y-0.5 hover:border-sky-400/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0"
+      >
+        <div className="flex items-start justify-between">
+          <div className="grid h-10 w-10 place-items-center rounded-xl border border-sky-400/10 bg-sky-500/10 text-sky-300">
+            <Icon size={18} />
+          </div>
+
+          <ChevronRight
+            size={16}
+            className="text-slate-700 transition group-hover:translate-x-0.5 group-hover:text-sky-300"
+          />
+        </div>
+
+        {card.value && (
+          <p className="mt-6 text-2xl font-bold">
+            {card.value}
+          </p>
+        )}
+
+        <p className={card.value ? 'mt-1 text-sm font-medium text-slate-300' : 'mt-6 text-sm font-medium text-slate-300'}>
+          {card.title}
+        </p>
+
+        <p className="mt-2 text-xs leading-5 text-slate-600">
+          {card.description}
+        </p>
+      </button>
+    )
   }
 
-  if (isSummaryError || value === undefined) {
-    return '—'
-  }
-
-  return value.toLocaleString()
-}
-
-const statistics = [
-  {
-    title: 'Employees',
-    value: summaryValue(
-      dashboardSummary?.employees_total,
-    ),
-    description: 'Company employee records',
-    icon: Users,
-  },
-  {
-    title: 'Departments',
-    value: summaryValue(
-      dashboardSummary?.departments_total,
-    ),
-    description: 'Organization structure',
-    icon: Building2,
-},
-  {
-    title: 'Failed Logins',
-    value: summaryValue(
-      dashboardSummary?.failed_logins_24h,
-    ),
-    description: 'During the last 24 hours',
-    icon: Activity,
-  },
-  {
-    title: 'Elevated Risk',
-    value: summaryValue(
-      dashboardSummary
-        ?.elevated_risk_attempts_24h,
-    ),
-    description: 'Risk score 50 or higher',
-    icon: ShieldCheck,
-  },
-]
   if (isError) {
     return <Navigate to="/login" replace />
   }
@@ -230,42 +364,27 @@ const statistics = [
               Workspace
             </p>
 
-           {navigationItems
-  .filter(
-    (item) =>
-      !item.permission ||
-      user?.permissions?.includes(item.permission),
-  )
-  .map((item) => {
-              const Icon = item.icon
+            {navigationItems
+              .filter((item) => canAccess(item.permission))
+              .map((item) => {
+                const Icon = item.icon
 
-              return (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={() => {
-  if (item.path) {
-    navigate(item.path)
-  }
-}}
-disabled={!item.path}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition ${
-                    item.active
-                      ? 'border border-sky-400/15 bg-sky-500/10 text-sky-300'
-                      : 'text-slate-500 hover:bg-slate-900 hover:text-slate-300'
-                  }`}
-                >
-                  <Icon size={18} />
-                  <span>{item.label}</span>
-
-                  {!item.path && (
-  <span className="ml-auto text-[9px] uppercase tracking-wider text-slate-700">
-    Soon
-  </span>
-)}
-                </button>
-              )
-            })}
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => navigate(item.path)}
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition ${
+                      item.active
+                        ? 'border border-sky-400/15 bg-sky-500/10 text-sky-300'
+                        : 'text-slate-500 hover:bg-slate-900 hover:text-slate-300'
+                    }`}
+                  >
+                    <Icon size={18} />
+                    <span>{item.label}</span>
+                  </button>
+                )
+              })}
           </nav>
 
           <div className="mt-auto rounded-2xl border border-slate-800 bg-slate-900/55 p-4">
@@ -321,12 +440,12 @@ disabled={!item.path}
               </button>
 
               <NotificationBell
-                  enabled={
-                    user?.permissions?.includes(
-                      'notifications.view',
-                    ) ?? false
-                  }
-                />
+                enabled={
+                  user?.permissions?.includes(
+                    'notifications.view',
+                  ) ?? false
+                }
+              />
             </div>
           </header>
 
@@ -346,8 +465,8 @@ disabled={!item.path}
 
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400">
                   Your secure operations workspace is active. Department,
-                  employee and workflow intelligence will appear here as your
-                  organization begins using FlowOps AI.
+                  employee, request and workflow intelligence is organized into
+                  clickable enterprise modules below.
                 </p>
 
                 <div className="mt-7 flex flex-wrap gap-3">
@@ -365,36 +484,25 @@ disabled={!item.path}
             </section>
 
             <section className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {statistics.map((statistic) => {
-                const Icon = statistic.icon
+              {statisticCards.map(renderCard)}
+            </section>
 
-                return (
-                  <article
-                    key={statistic.title}
-                    className="rounded-2xl border border-slate-800/80 bg-slate-950/50 p-5 transition hover:-translate-y-0.5 hover:border-sky-400/20"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="grid h-10 w-10 place-items-center rounded-xl border border-sky-400/10 bg-sky-500/10 text-sky-300">
-                        <Icon size={18} />
-                      </div>
+            <section className="mt-7">
+              <div className="mb-4 flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">
+                    Enterprise modules
+                  </p>
 
-                      <ChevronRight size={16} className="text-slate-700" />
-                    </div>
+                  <h3 className="mt-2 text-lg font-semibold">
+                    Jump into the workspace
+                  </h3>
+                </div>
+              </div>
 
-                    <p className="mt-6 text-2xl font-bold">
-                      {statistic.value}
-                    </p>
-
-                    <p className="mt-1 text-sm font-medium text-slate-300">
-                      {statistic.title}
-                    </p>
-
-                    <p className="mt-2 text-xs text-slate-600">
-                      {statistic.description}
-                    </p>
-                  </article>
-                )
-              })}
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {workspaceCards.map(renderCard)}
+              </div>
             </section>
 
             <section className="mt-7 grid gap-5 xl:grid-cols-[1.4fr_0.8fr]">
@@ -402,10 +510,16 @@ disabled={!item.path}
                 <h3 className="font-semibold">Operational overview</h3>
 
                 <p className="mt-2 text-xs text-slate-600">
-                  Live activity and performance analytics will appear here.
+                  Live activity and performance analytics are available through
+                  the Analytics module.
                 </p>
 
-                <div className="mt-8 grid h-52 place-items-center rounded-2xl border border-dashed border-slate-800 bg-slate-950/40">
+                <button
+                  type="button"
+                  onClick={() => navigate('/analytics')}
+                  disabled={!canAccess('reports.view')}
+                  className="mt-8 grid h-52 w-full place-items-center rounded-2xl border border-dashed border-slate-800 bg-slate-950/40 text-left transition hover:border-sky-400/30 disabled:cursor-not-allowed disabled:opacity-50"
+                >
                   <div className="text-center">
                     <Activity
                       size={27}
@@ -413,10 +527,10 @@ disabled={!item.path}
                     />
 
                     <p className="mt-3 text-sm text-slate-400">
-                      Waiting for operational data
+                      Open operational analytics
                     </p>
                   </div>
-                </div>
+                </button>
               </article>
 
               <article className="rounded-2xl border border-slate-800/80 bg-slate-950/50 p-6">
@@ -429,9 +543,12 @@ disabled={!item.path}
                     'Role permissions active',
                     'API services operational',
                   ].map((item) => (
-                    <div
+                    <button
                       key={item}
-                      className="flex items-center gap-3 rounded-xl border border-slate-800/60 bg-slate-900/40 px-4 py-3"
+                      type="button"
+                      onClick={() => navigate('/security')}
+                      disabled={!canAccess('view security dashboard')}
+                      className="flex w-full items-center gap-3 rounded-xl border border-slate-800/60 bg-slate-900/40 px-4 py-3 text-left transition hover:border-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <ShieldCheck
                         size={16}
@@ -441,7 +558,7 @@ disabled={!item.path}
                       <span className="text-xs text-slate-400">
                         {item}
                       </span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </article>

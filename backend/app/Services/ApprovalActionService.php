@@ -9,7 +9,9 @@ use App\Models\WorkflowStep;
 use App\Models\WorkflowTask;
 use App\Models\WorkflowTaskDecision;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 final class ApprovalActionService
 {
@@ -60,17 +62,21 @@ final class ApprovalActionService
             $request->load('requesterEmployee');
             $assignment = $this->resolver->resolve($nextStep, $request->requesterEmployee);
 
-            WorkflowTask::query()->create([
-                'company_id' => $request->company_id,
-                'workflow_instance_id' => $instance->id,
-                'workflow_step_id' => $nextStep->id,
-                'assigned_employee_id' => $assignment['assigned_employee_id'],
-                'assigned_role' => $assignment['assigned_role'],
-                'status' => 'pending',
-                'due_at' => $nextStep->sla_hours
-                    ? $now->copy()->addHours($nextStep->sla_hours)
-                    : null,
-            ]);
+            $nextTask = WorkflowTask::withoutEvents(
+                fn (): WorkflowTask => WorkflowTask::query()->create([
+                    'company_id' => $request->company_id,
+                    'workflow_instance_id' => $instance->id,
+                    'workflow_step_id' => $nextStep->id,
+                    'assigned_employee_id' => $assignment['assigned_employee_id'],
+                    'assigned_role' => $assignment['assigned_role'],
+                    'status' => 'pending',
+                    'due_at' => $nextStep->sla_hours
+                        ? $now->copy()->addHours($nextStep->sla_hours)
+                        : null,
+                ])
+            );
+
+            $this->notifyTaskAssignedSafely($nextTask);
 
             $instance->update(['current_workflow_step_id' => $nextStep->id]);
             $request->update(['current_workflow_step_id' => $nextStep->id]);
@@ -147,15 +153,19 @@ final class ApprovalActionService
             ]);
         }
 
-        WorkflowTaskDecision::query()->create([
-            'company_id' => $task->company_id,
-            'workflow_task_id' => $task->id,
-            'acted_by_user_id' => $actor->id,
-            'acted_by_employee_id' => $actor->employee?->id,
-            'decision' => $decision,
-            'note' => $note,
-            'acted_at' => now(),
-        ]);
+        $workflowTaskDecision = WorkflowTaskDecision::withoutEvents(
+            fn (): WorkflowTaskDecision => WorkflowTaskDecision::query()->create([
+                'company_id' => $task->company_id,
+                'workflow_task_id' => $task->id,
+                'acted_by_user_id' => $actor->id,
+                'acted_by_employee_id' => $actor->employee?->id,
+                'decision' => $decision,
+                'note' => $note,
+                'acted_at' => now(),
+            ])
+        );
+
+        $this->recordDecisionSideEffectsSafely($workflowTaskDecision);
     }
 
     private function requiredApprovals(WorkflowTask $task, WorkflowStep $step): int
@@ -169,5 +179,65 @@ final class ApprovalActionService
         $configured = max(1, $step->required_approvals);
 
         return $eligible <= 0 ? $configured : min($configured, $eligible);
+    }
+
+    private function recordDecisionSideEffectsSafely(WorkflowTaskDecision $decision): void
+    {
+        try {
+            $decision->loadMissing([
+                'actedByUser',
+                'workflowTask.workflowInstance.internalRequest',
+            ]);
+
+            $internalRequest = $decision
+                ->workflowTask
+                ?->workflowInstance
+                ?->internalRequest;
+
+            if ($internalRequest !== null) {
+                $approved = $decision->decision === 'approved';
+
+                app(RequestAuditService::class)->record(
+                    $internalRequest,
+                    $approved ? 'approval.approved' : 'approval.rejected',
+                    $approved ? 'Approval task approved.' : 'Approval task rejected.',
+                    [
+                        'workflow_task_id' => $decision->workflow_task_id,
+                        'workflow_step_id' => $decision->workflowTask?->workflow_step_id,
+                        'note' => $decision->note,
+                    ],
+                    $decision->actedByUser
+                );
+            }
+        } catch (Throwable $exception) {
+            Log::warning('FlowOps approval audit side effect failed.', [
+                'workflow_task_decision_id' => $decision->id,
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+
+        try {
+            app(AppNotificationService::class)->notifyRequesterDecision($decision);
+        } catch (Throwable $exception) {
+            Log::warning('FlowOps approval requester notification failed.', [
+                'workflow_task_decision_id' => $decision->id,
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    private function notifyTaskAssignedSafely(WorkflowTask $workflowTask): void
+    {
+        try {
+            app(AppNotificationService::class)->notifyTaskAssigned($workflowTask);
+        } catch (Throwable $exception) {
+            Log::warning('FlowOps next approval task notification failed.', [
+                'workflow_task_id' => $workflowTask->id,
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+        }
     }
 }

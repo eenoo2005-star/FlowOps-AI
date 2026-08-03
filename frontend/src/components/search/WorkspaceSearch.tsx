@@ -32,8 +32,7 @@ import type {
   WorkspaceSearchKind,
   WorkspaceSearchResult,
 } from '../../types/workspaceSearch'
-
-const OPEN_EVENT = 'flowops:open-workspace-search'
+import { OPEN_EVENT } from './workspaceSearchEvents'
 
 interface WorkspaceSearchProps {
   user: AuthUser | undefined
@@ -170,11 +169,6 @@ const kindIcons: Record<
   approval_task: CheckSquare2,
 }
 
-export function openWorkspaceSearch() {
-  window.dispatchEvent(
-    new CustomEvent(OPEN_EVENT),
-  )
-}
 
 function WorkspaceSearch({
   user,
@@ -189,10 +183,16 @@ function WorkspaceSearch({
   const [selectedIndex, setSelectedIndex] =
     useState(0)
 
-  const permissions = user?.permissions ?? []
+  const permissions = useMemo(
+    () => user?.permissions ?? [],
+    [user?.permissions],
+  )
 
   useEffect(() => {
-    const openSearch = () => setOpen(true)
+    const openSearch = () => {
+      setSelectedIndex(0)
+      setOpen(true)
+    }
 
     const keyboardShortcut = (
       event: globalThis.KeyboardEvent,
@@ -203,6 +203,7 @@ function WorkspaceSearch({
 
       if (isShortcut) {
         event.preventDefault()
+        setSelectedIndex(0)
         setOpen(true)
       }
 
@@ -309,14 +310,11 @@ function WorkspaceSearch({
     ],
   )
 
-  useEffect(() => {
-    setSelectedIndex(0)
-  }, [debouncedQuery, open])
-
   const close = () => {
     setOpen(false)
     setQuery('')
     setDebouncedQuery('')
+    setSelectedIndex(0)
   }
 
   const selectResult = (

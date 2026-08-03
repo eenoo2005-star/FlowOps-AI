@@ -27,6 +27,8 @@ final class StoreInternalRequestRequest extends FormRequest
                 )->where('company_id', $companyId),
             ],
 
+            'on_behalf_of_reason' => ['nullable', 'string', 'max:2000'],
+
             'requester_employee_id' => [
                 'nullable',
                 'integer',

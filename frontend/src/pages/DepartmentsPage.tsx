@@ -1,6 +1,5 @@
 import {
   type FormEvent,
-  useEffect,
   useState,
 } from 'react'
 import {
@@ -30,6 +29,7 @@ import {
   X,
 } from 'lucide-react'
 import type { AxiosError } from 'axios'
+import { useToast } from '../components/feedback/toastContext'
 import { authService } from '../services/authService'
 import { departmentService } from '../services/departmentService'
 import {
@@ -117,26 +117,21 @@ function DepartmentDialog({
   onSubmit,
 }: DepartmentDialogProps) {
   const [form, setForm] =
-    useState<DepartmentFormValues>(emptyForm)
+    useState<DepartmentFormValues>(() =>
+      department
+        ? {
+            name: department.name,
+            code: department.code,
+            description:
+              department.description ?? '',
+            is_active: department.is_active,
+          }
+        : emptyForm,
+    )
 
   const [errors, setErrors] = useState<
     Partial<Record<keyof DepartmentFormValues, string>>
   >({})
-
-  useEffect(() => {
-    if (department) {
-      setForm({
-        name: department.name,
-        code: department.code,
-        description: department.description ?? '',
-        is_active: department.is_active,
-      })
-    } else {
-      setForm(emptyForm)
-    }
-
-    setErrors({})
-  }, [department])
 
   const handleSubmit = (
     event: FormEvent<HTMLFormElement>,
@@ -356,6 +351,7 @@ function DepartmentDialog({
 }
 
 function DepartmentsPage() {
+  const toast = useToast()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -406,6 +402,12 @@ function DepartmentsPage() {
     enabled: canView,
   })
 
+  const closeDialogAfterSuccess = () => {
+    setDialogOpen(false)
+    setSelectedDepartment(null)
+    setMutationError(null)
+  }
+
   const refreshRelatedQueries = async () => {
     await Promise.all([
       queryClient.invalidateQueries({
@@ -421,10 +423,13 @@ function DepartmentsPage() {
     mutationFn: departmentService.create,
     onSuccess: async () => {
       await refreshRelatedQueries()
-      closeDialog()
+      closeDialogAfterSuccess()
+      toast.success('Department created successfully')
     },
     onError: (error) => {
-      setMutationError(extractErrorMessage(error))
+      const message = extractErrorMessage(error)
+      setMutationError(message)
+      toast.error('Department creation failed', message)
     },
   })
 
@@ -443,11 +448,14 @@ function DepartmentsPage() {
 
     onSuccess: async () => {
       await refreshRelatedQueries()
-      closeDialog()
+      closeDialogAfterSuccess()
+      toast.success('Department updated successfully')
     },
 
     onError: (error) => {
-      setMutationError(extractErrorMessage(error))
+      const message = extractErrorMessage(error)
+      setMutationError(message)
+      toast.error('Department update failed', message)
     },
   })
 
@@ -456,10 +464,11 @@ function DepartmentsPage() {
 
     onSuccess: async () => {
       await refreshRelatedQueries()
+      toast.success('Department deleted successfully')
     },
 
     onError: (error) => {
-      window.alert(extractErrorMessage(error))
+      toast.error('Department deletion failed', extractErrorMessage(error))
     },
   })
 
@@ -1023,6 +1032,7 @@ function DepartmentsPage() {
 
       {dialogOpen && (
         <DepartmentDialog
+          key={selectedDepartment?.id ?? 'new'}
           department={selectedDepartment}
           isSubmitting={
             createMutation.isPending ||
@@ -1038,3 +1048,4 @@ function DepartmentsPage() {
 }
 
 export default DepartmentsPage
+

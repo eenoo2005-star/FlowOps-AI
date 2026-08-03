@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-query'
 import './index.css'
 import App from './App'
+import { ToastProvider } from './components/feedback/ToastProvider'
 import { initializeTheme } from './theme'
 
 initializeTheme()
@@ -22,7 +23,9 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <ToastProvider>
+        <App />
+      </ToastProvider>
     </QueryClientProvider>
   </StrictMode>,
 )

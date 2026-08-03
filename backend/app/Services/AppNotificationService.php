@@ -12,6 +12,15 @@ use Spatie\Permission\Models\Role;
 
 final class AppNotificationService
 {
+    public function notifyRequestCreatedOnBehalf(\App\Models\InternalRequest $request): void
+    {
+        $request->loadMissing(['requesterEmployee.user', 'creator']);
+        $user = $request->requesterEmployee?->user;
+        if ($user === null || $request->created_by_user_id === $user->id) return;
+        $creator = $request->creator?->name ?? 'An authorized user';
+        $this->createForUsers(collect([$user]), (int) $request->company_id, 'request.created_on_behalf', 'Request created on your behalf', "{$creator} created {$request->reference_number} on your behalf.", "/requests/{$request->id}/collaboration", ['internal_request_id' => $request->id, 'created_by_user_id' => $request->created_by_user_id], "request:{$request->id}:created-on-behalf");
+    }
+
     public function notifyTaskAssigned(
         WorkflowTask $workflowTask
     ): void {

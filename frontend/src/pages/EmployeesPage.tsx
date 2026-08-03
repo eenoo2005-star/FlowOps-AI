@@ -1,6 +1,5 @@
 import {
   type FormEvent,
-  useEffect,
   useState,
 } from 'react'
 import {
@@ -35,6 +34,8 @@ import {
   X,
 } from 'lucide-react'
 import type { AxiosError } from 'axios'
+import { SearchablePicker } from '../components/forms/SearchablePicker'
+import { useToast } from '../components/feedback/toastContext'
 import { authService } from '../services/authService'
 import { departmentService } from '../services/departmentService'
 import { employeeService } from '../services/employeeService'
@@ -175,37 +176,32 @@ function EmployeeDialog({
   onSubmit,
 }: EmployeeDialogProps) {
   const [form, setForm] =
-    useState<EmployeeFormValues>(emptyForm)
+    useState<EmployeeFormValues>(() =>
+      employee
+        ? {
+            department_id:
+              employee.department_id?.toString() ?? '',
+            manager_id:
+              employee.manager_id?.toString() ?? '',
+            employee_number: employee.employee_number,
+            first_name: employee.first_name,
+            last_name: employee.last_name,
+            job_title: employee.job_title ?? '',
+            work_email: employee.work_email ?? '',
+            phone: employee.phone ?? '',
+            hire_date: employee.hire_date ?? '',
+            employment_type:
+              employee.employment_type,
+            status: employee.status,
+            avatar: employee.avatar ?? '',
+            notes: employee.notes ?? '',
+          }
+        : emptyForm,
+    )
 
   const [errors, setErrors] = useState<
     Partial<Record<keyof EmployeeFormValues, string>>
   >({})
-
-  useEffect(() => {
-    if (employee) {
-      setForm({
-        department_id:
-          employee.department_id?.toString() ?? '',
-        manager_id:
-          employee.manager_id?.toString() ?? '',
-        employee_number: employee.employee_number,
-        first_name: employee.first_name,
-        last_name: employee.last_name,
-        job_title: employee.job_title ?? '',
-        work_email: employee.work_email ?? '',
-        phone: employee.phone ?? '',
-        hire_date: employee.hire_date ?? '',
-        employment_type: employee.employment_type,
-        status: employee.status,
-        avatar: employee.avatar ?? '',
-        notes: employee.notes ?? '',
-      })
-    } else {
-      setForm(emptyForm)
-    }
-
-    setErrors({})
-  }, [employee])
 
   const availableManagers = managers.filter(
     (manager) => manager.id !== employee?.id,
@@ -436,28 +432,13 @@ function EmployeeDialog({
                   Manager
                 </span>
 
-                <select
+                <SearchablePicker
                   value={form.manager_id}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      manager_id: event.target.value,
-                    }))
-                  }
-                  className={fieldClass}
-                >
-                  <option value="">No manager</option>
-
-                  {availableManagers.map((manager) => (
-                    <option
-                      key={manager.id}
-                      value={manager.id}
-                    >
-                      {manager.full_name} â€”{' '}
-                      {manager.employee_number}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setForm((current) => ({ ...current, manager_id: value }))}
+                  placeholder="No manager"
+                  searchPlaceholder="Search manager by name or employee number..."
+                  options={availableManagers.map((manager) => ({ value: manager.id.toString(), label: manager.full_name, description: manager.employee_number }))}
+                />
               </label>
 
               <label>
@@ -704,6 +685,7 @@ function EmployeeDialog({
 }
 
 function EmployeesPage() {
+  const toast = useToast()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -782,6 +764,12 @@ function EmployeesPage() {
     enabled: canViewDepartments && dialogOpen,
   })
 
+  const closeDialogAfterSuccess = () => {
+    setDialogOpen(false)
+    setSelectedEmployee(null)
+    setMutationError(null)
+  }
+
   const refreshRelatedQueries = async () => {
     await Promise.all([
       queryClient.invalidateQueries({
@@ -798,11 +786,14 @@ function EmployeesPage() {
 
     onSuccess: async () => {
       await refreshRelatedQueries()
-      closeDialog()
+      closeDialogAfterSuccess()
+      toast.success('Employee created successfully')
     },
 
     onError: (error) => {
-      setMutationError(extractErrorMessage(error))
+      const message = extractErrorMessage(error)
+      setMutationError(message)
+      toast.error('Employee operation failed', message)
     },
   })
 
@@ -818,11 +809,14 @@ function EmployeesPage() {
 
     onSuccess: async () => {
       await refreshRelatedQueries()
-      closeDialog()
+      closeDialogAfterSuccess()
+      toast.success('Employee updated successfully')
     },
 
     onError: (error) => {
-      setMutationError(extractErrorMessage(error))
+      const message = extractErrorMessage(error)
+      setMutationError(message)
+      toast.error('Employee operation failed', message)
     },
   })
 
@@ -831,10 +825,11 @@ function EmployeesPage() {
 
     onSuccess: async () => {
       await refreshRelatedQueries()
+      toast.success('Employee deleted successfully')
     },
 
     onError: (error) => {
-      window.alert(extractErrorMessage(error))
+      toast.error('Employee deletion failed', extractErrorMessage(error))
     },
   })
 
@@ -1518,6 +1513,7 @@ function EmployeesPage() {
 
       {dialogOpen && (
         <EmployeeDialog
+          key={selectedEmployee?.id ?? 'new'}
           employee={selectedEmployee}
           departments={
             departmentOptionsQuery.data?.data ?? []
@@ -1539,3 +1535,4 @@ function EmployeesPage() {
 }
 
 export default EmployeesPage
+

@@ -1,0 +1,57 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260803032326
+Username: DE-14250-56461\l56461
+RunAs User: DE-14250-56461\l56461
+Configuration Name: 
+Machine: DE-14250-56461 (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\portfolio\verify-portfolio.ps1
+Process ID: 31504
+PSVersion: 5.1.26100.8875
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.8875
+BuildVersion: 10.0.26100.8875
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+
+FlowOps AI Portfolio Verification
+ProjectRoot: C:\Projects\FlowOps-AI
+Report: C:\Projects\FlowOps-AI\_portfolio_release\portfolio-verification-20260803-032326.txt
+
+=== Required files ===
+OK README.md
+OK docs\09-portfolio-release-plan.md
+OK docs\10-demo-script.md
+OK docs\11-recruiter-one-page.md
+OK compose.yaml
+OK frontend\package.json
+OK backend\artisan
+OK backend\composer.json
+
+=== Docker services ===
+-> docker compose ps
+
+
+=== Health endpoint ===
+Health status: 200
+{"data":{"status":"healthy","checks":{"database":{"status":"ok","latency_ms":23.28},"cache":{"status":"ok","latency_ms":4.06},"storage":{"status":"ok","latency_ms":0.68},"queue":{"status":"ok","latency_ms":8.58}},"timestamp":"2026-08-03T01:23:28+00:00"}}
+
+=== Laravel routes ===
+-> php artisan route:list
+
+
+=== Request type diagnosis ===
+-> flowops:diagnose-request-types
+
+
+=== Backend tests ===
+-> php artisan test
+
+PS>TerminatingError(): "php artisan test failed with exit code 1"
+**********************
+Windows PowerShell transcript end
+End time: 20260803032332
+**********************

@@ -28,7 +28,8 @@ final class InternalRequestService
         $query = InternalRequest::query()
             ->with([
                 'requestType:id,name,code',
-                'requesterEmployee:id,first_name,last_name,employee_number',
+                'requesterEmployee:id,first_name,last_name,employee_number,user_id',
+                'creator:id,name,email',
                 'workflowDefinition:id,name,code,version',
                 'currentWorkflowStep:id,name,code,step_order',
             ]);
@@ -134,15 +135,22 @@ final class InternalRequestService
             ]);
         }
 
-        unset($data['requester_employee_id']);
+        $isOnBehalf = $user->employee?->id !== $requester->id;
+        if ($isOnBehalf && trim((string) ($data['on_behalf_of_reason'] ?? '')) === '') {
+            throw ValidationException::withMessages(['on_behalf_of_reason' => ['A reason is required when creating a request for another employee.']]);
+        }
+        $reason = $isOnBehalf ? trim((string) $data['on_behalf_of_reason']) : null;
+        unset($data['requester_employee_id'], $data['on_behalf_of_reason']);
 
-        return InternalRequest::query()
+        $request = InternalRequest::query()
             ->create([
                 ...$data,
                 'company_id' => (int) $user->company_id,
                 'request_type_id' => $requestType->id,
                 'workflow_definition_id' => $requestType->workflow_definition_id,
                 'requester_employee_id' => $requester->id,
+                'created_by_user_id' => $user->id,
+                'on_behalf_of_reason' => $reason,
                 'reference_number' => $this->generateReferenceNumber(
                     (int) $user->company_id
                 ),
@@ -150,10 +158,15 @@ final class InternalRequestService
             ])
             ->load([
                 'requestType:id,name,code',
-                'requesterEmployee:id,first_name,last_name,employee_number',
+                'requesterEmployee:id,first_name,last_name,employee_number,user_id',
+                'creator:id,name,email',
                 'workflowDefinition:id,name,code,version',
                 'currentWorkflowStep:id,name,code,step_order',
             ]);
+
+        app(AppNotificationService::class)->notifyRequestCreatedOnBehalf($request);
+
+        return $request;
     }
 
     public function updateDraft(
@@ -174,7 +187,8 @@ final class InternalRequestService
             ->fresh()
             ->load([
                 'requestType:id,name,code',
-                'requesterEmployee:id,first_name,last_name,employee_number',
+                'requesterEmployee:id,first_name,last_name,employee_number,user_id',
+                'creator:id,name,email',
                 'workflowDefinition:id,name,code,version',
                 'currentWorkflowStep:id,name,code,step_order',
             ]);
@@ -270,7 +284,8 @@ final class InternalRequestService
                     ->fresh()
                     ->load([
                         'requestType:id,name,code',
-                        'requesterEmployee:id,first_name,last_name,employee_number',
+                        'requesterEmployee:id,first_name,last_name,employee_number,user_id',
+                'creator:id,name,email',
                         'workflowDefinition:id,name,code,version',
                         'currentWorkflowStep:id,name,code,step_order',
 

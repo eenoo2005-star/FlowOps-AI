@@ -1,6 +1,5 @@
 import {
   type FormEvent,
-  useEffect,
   useState,
 } from 'react'
 import {
@@ -29,6 +28,7 @@ import {
   X,
 } from 'lucide-react'
 import type { AxiosError } from 'axios'
+import { useToast } from '../components/feedback/toastContext'
 import { authService } from '../services/authService'
 import { requestTypeService } from '../services/requestTypeService'
 import { workflowService } from '../services/workflowService'
@@ -116,29 +116,25 @@ function RequestTypeDialog({
   onSubmit,
 }: RequestTypeDialogProps) {
   const [form, setForm] =
-    useState<RequestTypeFormValues>(emptyForm)
+    useState<RequestTypeFormValues>(() =>
+      requestType
+        ? {
+            workflow_definition_id:
+              requestType.workflow_definition_id.toString(),
+            name: requestType.name,
+            code: requestType.code,
+            description:
+              requestType.description ?? '',
+            instructions:
+              requestType.instructions ?? '',
+            is_active: requestType.is_active,
+          }
+        : emptyForm,
+    )
 
   const [errors, setErrors] = useState<
     Partial<Record<keyof RequestTypeFormValues, string>>
   >({})
-
-  useEffect(() => {
-    if (requestType) {
-      setForm({
-        workflow_definition_id:
-          requestType.workflow_definition_id.toString(),
-        name: requestType.name,
-        code: requestType.code,
-        description: requestType.description ?? '',
-        instructions: requestType.instructions ?? '',
-        is_active: requestType.is_active,
-      })
-    } else {
-      setForm(emptyForm)
-    }
-
-    setErrors({})
-  }, [requestType])
 
   const handleSubmit = (
     event: FormEvent<HTMLFormElement>,
@@ -414,6 +410,7 @@ function RequestTypeDialog({
 }
 
 function RequestTypesPage() {
+  const toast = useToast()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -486,6 +483,12 @@ function RequestTypesPage() {
     enabled: canView && dialogOpen,
   })
 
+  const closeDialogAfterSuccess = () => {
+    setDialogOpen(false)
+    setEditingRequestType(null)
+    setMutationError(null)
+  }
+
   const refresh = async () => {
     await queryClient.invalidateQueries({
       queryKey: ['request-types'],
@@ -497,13 +500,14 @@ function RequestTypesPage() {
 
     onSuccess: async () => {
       await refresh()
-      closeDialog()
+      closeDialogAfterSuccess()
+      toast.success('Request type created successfully')
     },
 
     onError: (error) => {
-      setMutationError(
-        extractErrorMessage(error),
-      )
+      const message = extractErrorMessage(error)
+      setMutationError(message)
+      toast.error('Request type creation failed', message)
     },
   })
 
@@ -522,23 +526,27 @@ function RequestTypesPage() {
 
     onSuccess: async () => {
       await refresh()
-      closeDialog()
+      closeDialogAfterSuccess()
+      toast.success('Request type updated successfully')
     },
 
     onError: (error) => {
-      setMutationError(
-        extractErrorMessage(error),
-      )
+      const message = extractErrorMessage(error)
+      setMutationError(message)
+      toast.error('Request type update failed', message)
     },
   })
 
   const deleteMutation = useMutation({
     mutationFn: requestTypeService.remove,
 
-    onSuccess: refresh,
+    onSuccess: async () => {
+      await refresh()
+      toast.success('Request type deleted successfully')
+    },
 
     onError: (error) => {
-      window.alert(extractErrorMessage(error))
+      toast.error('Request type deletion failed', extractErrorMessage(error))
     },
   })
 
@@ -960,6 +968,7 @@ function RequestTypesPage() {
 
       {dialogOpen && (
         <RequestTypeDialog
+          key={editingRequestType?.id ?? 'new'}
           requestType={editingRequestType}
           workflows={
             workflowsQuery.data?.data ?? []
@@ -978,3 +987,4 @@ function RequestTypesPage() {
 }
 
 export default RequestTypesPage
+

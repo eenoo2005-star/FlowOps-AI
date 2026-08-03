@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useMemo,
   useState,
 } from 'react'
@@ -21,6 +20,7 @@ import {
   Menu,
   Search,
   ShieldCheck,
+  Settings2,
   Users,
   Workflow,
   X,
@@ -33,9 +33,8 @@ import {
 import NotificationBell from '../NotificationBell'
 import { authService } from '../../services/authService'
 import FlowBackground from './FlowBackground'
-import WorkspaceSearch, {
-  openWorkspaceSearch,
-} from '../search/WorkspaceSearch'
+import WorkspaceSearch from '../search/WorkspaceSearch'
+import { openWorkspaceSearch } from '../search/workspaceSearchEvents'
 import ThemeModeControl from './ThemeModeControl'
 
 interface NavigationItem {
@@ -105,6 +104,12 @@ const navigation: NavigationItem[] = [
     icon: ShieldCheck,
     permission: 'view security dashboard',
   },
+  {
+    label: 'Administration',
+    path: '/administration',
+    icon: Settings2,
+    permission: 'administration.view',
+  },
 ]
 
 const pageTitles: Record<string, string> = {
@@ -118,6 +123,7 @@ const pageTitles: Record<string, string> = {
   '/requests': 'Requests',
   '/approvals': 'Approvals',
   '/security': 'Security',
+  '/administration': 'Administration',
 }
 
 function WorkspaceExperience() {
@@ -135,10 +141,6 @@ function WorkspaceExperience() {
     queryFn: authService.getCurrentUser,
     retry: false,
   })
-
-  useEffect(() => {
-    setMobileNavigationOpen(false)
-  }, [location.pathname])
 
   const availableNavigation = useMemo(() => {
     const permissions =
@@ -174,6 +176,17 @@ function WorkspaceExperience() {
         `${path}/`,
       )
     )
+
+  const navigateTo = (
+    path: string,
+    closeMobileNavigation = false,
+  ) => {
+    if (closeMobileNavigation) {
+      setMobileNavigationOpen(false)
+    }
+
+    navigate(path)
+  }
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
@@ -270,7 +283,7 @@ function WorkspaceExperience() {
                     key={item.path}
                     type="button"
                     onClick={() =>
-                      navigate(item.path)
+                      navigateTo(item.path)
                     }
                     className={`workspace-navigation-item ${
                       active
@@ -434,7 +447,7 @@ function WorkspaceExperience() {
                       key={item.path}
                       type="button"
                       onClick={() =>
-                        navigate(item.path)
+                        navigateTo(item.path, true)
                       }
                       className={`workspace-navigation-item ${
                         isActive(item.path)

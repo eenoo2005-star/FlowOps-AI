@@ -17,6 +17,8 @@ final class InternalRequestResource extends JsonResource
             'workflow_definition_id' => $this->workflow_definition_id,
 
             'requester_employee_id' => $this->requester_employee_id,
+            'created_by_user_id' => $this->created_by_user_id,
+            'on_behalf_of_reason' => $this->on_behalf_of_reason,
 
             'current_workflow_step_id' => $this->current_workflow_step_id,
 
@@ -55,6 +57,12 @@ final class InternalRequestResource extends JsonResource
                         ->employee_number,
                 ]
             ),
+
+            'created_by' => $this->whenLoaded('creator', fn () => $this->creator ? [
+                'id' => $this->creator->id,
+                'name' => $this->creator->name,
+                'email' => $this->creator->email,
+            ] : null),
 
             'workflow_definition' => $this->whenLoaded(
                 'workflowDefinition',

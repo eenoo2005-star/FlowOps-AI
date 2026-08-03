@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Employee;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\ValidationException;
 
 final class EmployeeService
 {
@@ -158,6 +159,7 @@ final class EmployeeService
         int $companyId
     ): Employee {
         $data['company_id'] = $companyId;
+        $this->assertManagerIsValid(null, $data['manager_id'] ?? null, $companyId);
 
         return Employee::query()
             ->create($data)
@@ -175,6 +177,7 @@ final class EmployeeService
         Employee $employee,
         array $data
     ): Employee {
+        $this->assertManagerIsValid($employee, $data['manager_id'] ?? $employee->manager_id, (int) $employee->company_id);
         $employee->update($data);
 
         return $employee
@@ -184,6 +187,24 @@ final class EmployeeService
                 'manager:id,first_name,last_name',
                 'user:id,name,email',
             ]);
+    }
+
+    private function assertManagerIsValid(?Employee $employee, ?int $managerId, int $companyId): void
+    {
+        if ($managerId === null) return;
+        if ($employee !== null && $managerId === $employee->id) {
+            throw ValidationException::withMessages(['manager_id' => ['An employee cannot manage themselves.']]);
+        }
+        $manager = Employee::query()->where('company_id', $companyId)->findOrFail($managerId);
+        $seen = [];
+        while ($manager !== null) {
+            if (isset($seen[$manager->id])) break;
+            $seen[$manager->id] = true;
+            if ($employee !== null && $manager->id === $employee->id) {
+                throw ValidationException::withMessages(['manager_id' => ['This assignment would create a circular reporting hierarchy.']]);
+            }
+            $manager = $manager->manager_id ? Employee::query()->where('company_id', $companyId)->find($manager->manager_id) : null;
+        }
     }
 
     public function delete(Employee $employee): void

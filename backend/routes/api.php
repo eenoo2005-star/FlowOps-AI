@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\Administration\EnterpriseAdministrationController;
 use App\Http\Controllers\Api\DashboardAnalyticsController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\Security\SecurityController;
 use App\Http\Controllers\AppNotificationController;
 use App\Http\Controllers\AuthController;
@@ -18,37 +20,45 @@ use App\Http\Controllers\WorkflowTaskController;
 use App\Http\Controllers\WorkspaceSearchController;
 use Illuminate\Support\Facades\Route;
 
-// تسجيل الدخول
+Route::get('/health', HealthController::class)
+    ->name('api.health');
+
 Route::post('/login', [AuthController::class, 'login'])
     ->middleware('throttle:login');
 
-// المسارات المحمية بـ Sanctum
 Route::middleware('auth:sanctum')->group(function (): void {
-
-    // مسارات لوحة التحكم (Dashboard)
     Route::get('/dashboard/summary', DashboardController::class);
+
     Route::get(
         '/dashboard/analytics',
         DashboardAnalyticsController::class
     );
 
-    // مسارات الأمان (Security)
     Route::prefix('security')->group(function (): void {
         Route::get('/overview', [SecurityController::class, 'overview']);
         Route::get('/login-attempts', [SecurityController::class, 'loginAttempts']);
     });
 
-    // مسارات الحساب والمستخدم
+    Route::prefix('administration')->group(function (): void {
+        Route::get('/overview', [EnterpriseAdministrationController::class, 'overview']);
+        Route::get('/roles', [EnterpriseAdministrationController::class, 'roles']);
+        Route::get('/permissions', [EnterpriseAdministrationController::class, 'permissions']);
+        Route::patch(
+            '/roles/{role}/permissions',
+            [EnterpriseAdministrationController::class, 'updateRolePermissions']
+        );
+        Route::get('/audit-events', [EnterpriseAdministrationController::class, 'auditEvents']);
+    });
+
     Route::get('/user', [AuthController::class, 'user']);
 
     Route::get(
         '/workspace-search',
         WorkspaceSearchController::class
     )->middleware('throttle:120,1');
+
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // مسارات الموظفين والأقسام
-    // Workflow definition and step administration
     Route::apiResource(
         'workflow-definitions',
         WorkflowDefinitionController::class
@@ -70,6 +80,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
         '/workflow-definitions/{workflowDefinition}/steps/{workflowStep}',
         [WorkflowStepController::class, 'destroy']
     );
+
+    Route::get(
+        '/request-types/options/active',
+        [RequestTypeController::class, 'activeOptions']
+    );
+
     Route::apiResource(
         'request-types',
         RequestTypeController::class
@@ -88,6 +104,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         '/internal-requests/{internalRequest}/submit',
         [InternalRequestActionController::class, 'submit']
     );
+
     Route::get(
         '/internal-requests/{internalRequest}/collaboration',
         [RequestCollaborationController::class, 'overview']
@@ -117,6 +134,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         '/internal-requests/{internalRequest}/attachments/{requestAttachment}',
         [RequestCollaborationController::class, 'destroyAttachment']
     );
+
     Route::apiResource(
         'workflow-tasks',
         WorkflowTaskController::class
@@ -136,6 +154,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         '/workflow-tasks/{workflowTask}/reject',
         [WorkflowTaskActionController::class, 'reject']
     );
+
     Route::get(
         '/notifications',
         [AppNotificationController::class, 'index']
@@ -155,6 +174,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         '/notifications/{appNotification}/read',
         [AppNotificationController::class, 'markRead']
     );
+
     Route::apiResource('employees', EmployeeController::class);
     Route::apiResource('departments', DepartmentController::class);
 });

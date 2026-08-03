@@ -1,6 +1,5 @@
 import {
   type FormEvent,
-  useEffect,
   useState,
 } from 'react'
 import {
@@ -34,6 +33,8 @@ import {
   X,
 } from 'lucide-react'
 import type { AxiosError } from 'axios'
+import { SearchablePicker } from '../components/forms/SearchablePicker'
+import { useToast } from '../components/feedback/toastContext'
 import { authService } from '../services/authService'
 import { employeeService } from '../services/employeeService'
 import { internalRequestService } from '../services/internalRequestService'
@@ -61,6 +62,8 @@ interface LaravelErrorResponse {
 interface RequestDialogProps {
   request: InternalRequest | null
   requestTypes: RequestType[]
+  requestTypesLoading: boolean
+  requestTypesError: boolean
   employees: Employee[]
   canCreateForOthers: boolean
   isSubmitting: boolean
@@ -85,6 +88,7 @@ const initialFilters: InternalRequestFilters = {
 const emptyForm: InternalRequestFormValues = {
   request_type_id: '',
   requester_employee_id: '',
+  on_behalf_of_reason: '',
   title: '',
   description: '',
   priority: 'normal',
@@ -172,6 +176,8 @@ function statusClasses(
 function RequestDialog({
   request,
   requestTypes,
+  requestTypesLoading,
+  requestTypesError,
   employees,
   canCreateForOthers,
   isSubmitting,
@@ -180,8 +186,21 @@ function RequestDialog({
   onSubmit,
 }: RequestDialogProps) {
   const [form, setForm] =
-    useState<InternalRequestFormValues>(
-      emptyForm,
+    useState<InternalRequestFormValues>(() =>
+      request
+        ? {
+            request_type_id:
+              request.request_type_id.toString(),
+            requester_employee_id:
+              request.requester_employee_id.toString(),
+            on_behalf_of_reason:
+              request.on_behalf_of_reason ?? '',
+            title: request.title,
+            description:
+              request.description ?? '',
+            priority: request.priority,
+          }
+        : emptyForm,
     )
 
   const [errors, setErrors] = useState<
@@ -192,24 +211,6 @@ function RequestDialog({
       >
     >
   >({})
-
-  useEffect(() => {
-    if (request) {
-      setForm({
-        request_type_id:
-          request.request_type_id.toString(),
-        requester_employee_id:
-          request.requester_employee_id.toString(),
-        title: request.title,
-        description: request.description ?? '',
-        priority: request.priority,
-      })
-    } else {
-      setForm(emptyForm)
-    }
-
-    setErrors({})
-  }, [request])
 
   const handleSubmit = (
     event: FormEvent<HTMLFormElement>,
@@ -267,6 +268,8 @@ function RequestDialog({
         result.data.request_type_id,
       ),
 
+      on_behalf_of_reason: nullableString(result.data.on_behalf_of_reason),
+
       requester_employee_id:
         result.data.requester_employee_id === ''
           ? null
@@ -287,6 +290,12 @@ function RequestDialog({
 
   const fieldClass =
     'h-11 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 text-sm text-slate-200 outline-none transition placeholder:text-slate-700 focus:border-sky-400/40 disabled:opacity-50'
+
+  const requestTypeEmptyMessage = requestTypesLoading
+    ? 'Loading active request types...'
+    : requestTypesError
+      ? 'Request types could not be loaded. Check permissions or refresh the page.'
+      : 'No active request types. Create and activate a request type linked to an active workflow first.'
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 p-4 backdrop-blur-sm">
@@ -333,32 +342,15 @@ function RequestDialog({
               Request type
             </span>
 
-            <select
+            <SearchablePicker
               value={form.request_type_id}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  request_type_id:
-                    event.target.value,
-                }))
-              }
+              onChange={(value) => setForm((current) => ({ ...current, request_type_id: value }))}
               disabled={request !== null}
-              className={fieldClass}
-            >
-              <option value="">
-                Select request type
-              </option>
-
-              {requestTypes.map((requestType) => (
-                <option
-                  key={requestType.id}
-                  value={requestType.id}
-                >
-                  {requestType.name} (
-                  {requestType.code})
-                </option>
-              ))}
-            </select>
+              placeholder="Select request type"
+              searchPlaceholder="Search request types..."
+              emptyMessage={requestTypeEmptyMessage}
+              options={requestTypes.map((requestType) => ({ value: requestType.id.toString(), label: requestType.name, description: requestType.code }))}
+            />
 
             {errors.request_type_id && (
               <p className="mt-2 text-xs text-rose-300">
@@ -373,32 +365,21 @@ function RequestDialog({
                 Requester employee
               </span>
 
-              <select
+              <SearchablePicker
                 value={form.requester_employee_id}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    requester_employee_id:
-                      event.target.value,
-                  }))
-                }
+                onChange={(value) => setForm((current) => ({ ...current, requester_employee_id: value, on_behalf_of_reason: value === '' ? '' : current.on_behalf_of_reason }))}
                 disabled={request !== null}
-                className={fieldClass}
-              >
-                <option value="">
-                  Use my linked employee record
-                </option>
+                placeholder="Use my linked employee record"
+                searchPlaceholder="Search by name or employee number..."
+                options={employees.map((employee) => ({ value: employee.id.toString(), label: employee.full_name, description: employee.employee_number }))}
+              />
 
-                {employees.map((employee) => (
-                  <option
-                    key={employee.id}
-                    value={employee.id}
-                  >
-                    {employee.full_name} -{' '}
-                    {employee.employee_number}
-                  </option>
-                ))}
-              </select>
+              {form.requester_employee_id !== '' && (
+                <div className="mt-4">
+                  <span className="mb-2 block text-xs text-slate-500">Reason for creating on behalf</span>
+                  <textarea rows={3} value={form.on_behalf_of_reason} onChange={(event) => setForm((current) => ({ ...current, on_behalf_of_reason: event.target.value }))} placeholder="Explain why this request is being created for another employee." className="w-full resize-none rounded-xl border border-slate-800 bg-slate-950 px-3 py-3 text-sm text-slate-200 outline-none focus:border-sky-400/40" />
+                </div>
+              )}
             </label>
           )}
 
@@ -501,6 +482,7 @@ function RequestDialog({
 }
 
 function InternalRequestsPage() {
+  const toast = useToast()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -586,16 +568,11 @@ function InternalRequestsPage() {
       canView && selectedRequestId !== null,
   })
 
-  const requestTypesQuery = useQuery({
-    queryKey: ['request-types', 'request-options'],
-    queryFn: () =>
-      requestTypeService.list({
-        page: 1,
-        search: '',
-        status: 'active',
-        per_page: 100,
-      }),
+  const activeRequestTypesQuery = useQuery({
+    queryKey: ['request-types', 'active-options'],
+    queryFn: requestTypeService.activeOptions,
     enabled: canView,
+    retry: false,
   })
 
   const employeeOptionsQuery = useQuery({
@@ -613,6 +590,12 @@ function InternalRequestsPage() {
     enabled:
       canCreateForOthers && dialogOpen,
   })
+
+  const closeDialogAfterSuccess = () => {
+    setDialogOpen(false)
+    setEditingRequest(null)
+    setMutationError(null)
+  }
 
   const refreshRequests = async (
     requestId?: number,
@@ -656,7 +639,8 @@ function InternalRequestsPage() {
     onSuccess: async (request) => {
       setSelectedRequestId(request.id)
       await refreshRequests(request.id)
-      closeDialog()
+      closeDialogAfterSuccess()
+      toast.success('Request draft created', `${request.reference_number} is ready for review.`)
     },
 
     onError: (error) => {
@@ -683,7 +667,8 @@ function InternalRequestsPage() {
 
     onSuccess: async (request) => {
       await refreshRequests(request.id)
-      closeDialog()
+      closeDialogAfterSuccess()
+      toast.success('Request updated successfully', request.reference_number)
     },
 
     onError: (error) => {
@@ -698,10 +683,11 @@ function InternalRequestsPage() {
 
     onSuccess: async (request) => {
       await refreshRequests(request.id)
+      toast.success('Request submitted successfully', `${request.reference_number} entered the approval workflow.`)
     },
 
     onError: (error) => {
-      window.alert(extractErrorMessage(error))
+      toast.error('Request submission failed', extractErrorMessage(error))
     },
   })
 
@@ -714,10 +700,11 @@ function InternalRequestsPage() {
       }
 
       await refreshRequests()
+      toast.success('Request deleted successfully')
     },
 
     onError: (error) => {
-      window.alert(extractErrorMessage(error))
+      toast.error('Request deletion failed', extractErrorMessage(error))
     },
   })
 
@@ -1004,7 +991,7 @@ function InternalRequestsPage() {
               >
                 <option value="">All types</option>
 
-                {requestTypesQuery.data?.data.map(
+                {activeRequestTypesQuery.data?.map(
                   (requestType) => (
                     <option
                       key={requestType.id}
@@ -1504,9 +1491,17 @@ function InternalRequestsPage() {
 
       {dialogOpen && (
         <RequestDialog
+          key={editingRequest?.id ?? 'new'}
           request={editingRequest}
           requestTypes={
-            requestTypesQuery.data?.data ?? []
+            activeRequestTypesQuery.data ?? []
+          }
+          requestTypesLoading={
+            activeRequestTypesQuery.isPending ||
+            activeRequestTypesQuery.isFetching
+          }
+          requestTypesError={
+            activeRequestTypesQuery.isError
           }
           employees={
             employeeOptionsQuery.data?.data ?? []
@@ -1526,3 +1521,4 @@ function InternalRequestsPage() {
 }
 
 export default InternalRequestsPage
+

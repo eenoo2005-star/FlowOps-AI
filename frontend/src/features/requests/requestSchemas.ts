@@ -45,6 +45,8 @@ export const internalRequestSchema = z.object({
 
   requester_employee_id: z.string(),
 
+  on_behalf_of_reason: z.string().trim().max(2000, 'Reason is too long.'),
+
   title: z
     .string()
     .trim()

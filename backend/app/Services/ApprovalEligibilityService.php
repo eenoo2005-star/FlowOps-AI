@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Employee;
 use App\Models\User;
 use App\Models\WorkflowTask;
+use Spatie\Permission\Models\Role;
+use Throwable;
 
 final class ApprovalEligibilityService
 {
@@ -25,8 +27,19 @@ final class ApprovalEligibilityService
             return true;
         }
 
-        return $workflowTask->assigned_role !== null
-            && $user->hasRole($workflowTask->assigned_role);
+        if ($workflowTask->assigned_role === null) {
+            return false;
+        }
+
+        if (! $this->roleExists($workflowTask->assigned_role)) {
+            return false;
+        }
+
+        try {
+            return $user->hasRole($workflowTask->assigned_role);
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     public function eligibleUserCount(WorkflowTask $workflowTask): int
@@ -39,12 +52,28 @@ final class ApprovalEligibilityService
         }
 
         if ($workflowTask->assigned_role !== null) {
-            return User::query()
-                ->where('company_id', $workflowTask->company_id)
-                ->role($workflowTask->assigned_role)
-                ->count();
+            if (! $this->roleExists($workflowTask->assigned_role)) {
+                return 0;
+            }
+
+            try {
+                return User::query()
+                    ->where('company_id', $workflowTask->company_id)
+                    ->role($workflowTask->assigned_role)
+                    ->count();
+            } catch (Throwable) {
+                return 0;
+            }
         }
 
         return 0;
+    }
+
+    private function roleExists(string $roleName): bool
+    {
+        return Role::query()
+            ->where('name', $roleName)
+            ->where('guard_name', 'web')
+            ->exists();
     }
 }

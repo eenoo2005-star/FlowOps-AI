@@ -1,6 +1,5 @@
 import {
   type FormEvent,
-  useEffect,
   useState,
 } from 'react'
 import {
@@ -33,6 +32,7 @@ import {
   X,
 } from 'lucide-react'
 import type { AxiosError } from 'axios'
+import { useToast } from '../components/feedback/toastContext'
 import { authService } from '../services/authService'
 import { employeeService } from '../services/employeeService'
 import { workflowService } from '../services/workflowService'
@@ -158,8 +158,17 @@ function DefinitionDialog({
   onSubmit,
 }: DefinitionDialogProps) {
   const [form, setForm] =
-    useState<WorkflowDefinitionFormValues>(
-      emptyDefinitionForm,
+    useState<WorkflowDefinitionFormValues>(() =>
+      definition
+        ? {
+            name: definition.name,
+            code: definition.code,
+            description:
+              definition.description ?? '',
+            version: definition.version.toString(),
+            is_active: definition.is_active,
+          }
+        : emptyDefinitionForm,
     )
 
   const [errors, setErrors] = useState<
@@ -170,22 +179,6 @@ function DefinitionDialog({
       >
     >
   >({})
-
-  useEffect(() => {
-    if (definition) {
-      setForm({
-        name: definition.name,
-        code: definition.code,
-        description: definition.description ?? '',
-        version: definition.version.toString(),
-        is_active: definition.is_active,
-      })
-    } else {
-      setForm(emptyDefinitionForm)
-    }
-
-    setErrors({})
-  }, [definition])
 
   const handleSubmit = (
     event: FormEvent<HTMLFormElement>,
@@ -437,8 +430,29 @@ function StepDialog({
   onSubmit,
 }: StepDialogProps) {
   const [form, setForm] =
-    useState<WorkflowStepFormValues>(
-      emptyStepForm,
+    useState<WorkflowStepFormValues>(() =>
+      step
+        ? {
+            name: step.name,
+            code: step.code,
+            description:
+              step.description ?? '',
+            step_order:
+              step.step_order.toString(),
+            approver_type: step.approver_type,
+            approver_role:
+              step.approver_role ?? '',
+            approver_employee_id:
+              step.approver_employee_id?.toString() ?? '',
+            approval_mode: step.approval_mode,
+            required_approvals:
+              step.required_approvals.toString(),
+            sla_hours:
+              step.sla_hours?.toString() ?? '',
+            can_reject: step.can_reject,
+            is_final: step.is_final,
+          }
+        : emptyStepForm,
     )
 
   const [errors, setErrors] = useState<
@@ -449,31 +463,6 @@ function StepDialog({
       >
     >
   >({})
-
-  useEffect(() => {
-    if (step) {
-      setForm({
-        name: step.name,
-        code: step.code,
-        description: step.description ?? '',
-        step_order: step.step_order.toString(),
-        approver_type: step.approver_type,
-        approver_role: step.approver_role ?? '',
-        approver_employee_id:
-          step.approver_employee_id?.toString() ?? '',
-        approval_mode: step.approval_mode,
-        required_approvals:
-          step.required_approvals.toString(),
-        sla_hours: step.sla_hours?.toString() ?? '',
-        can_reject: step.can_reject,
-        is_final: step.is_final,
-      })
-    } else {
-      setForm(emptyStepForm)
-    }
-
-    setErrors({})
-  }, [step])
 
   const handleSubmit = (
     event: FormEvent<HTMLFormElement>,
@@ -944,6 +933,7 @@ function StepDialog({
 }
 
 function WorkflowsPage() {
+  const toast = useToast()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -1084,6 +1074,7 @@ function WorkflowsPage() {
       setSelectedDefinitionId(definition.id)
       await refreshSelectedDefinition(definition.id)
       closeDefinitionDialog()
+      toast.success('Workflow created successfully')
     },
 
     onError: (error) => {
@@ -1109,6 +1100,7 @@ function WorkflowsPage() {
     onSuccess: async (definition) => {
       await refreshSelectedDefinition(definition.id)
       closeDefinitionDialog()
+      toast.success('Workflow updated successfully')
     },
 
     onError: (error) => {
@@ -1127,10 +1119,11 @@ function WorkflowsPage() {
       }
 
       await refreshDefinitions()
+      toast.success('Workflow deleted successfully')
     },
 
     onError: (error) => {
-      window.alert(extractErrorMessage(error))
+      toast.error('Workflow deletion failed', extractErrorMessage(error))
     },
   })
 
@@ -1152,6 +1145,7 @@ function WorkflowsPage() {
         variables.definitionId,
       )
       closeStepDialog()
+      toast.success('Workflow step created successfully')
     },
 
     onError: (error) => {
@@ -1182,6 +1176,7 @@ function WorkflowsPage() {
         variables.definitionId,
       )
       closeStepDialog()
+      toast.success('Workflow step updated successfully')
     },
 
     onError: (error) => {
@@ -1208,10 +1203,11 @@ function WorkflowsPage() {
       await refreshSelectedDefinition(
         variables.definitionId,
       )
+      toast.success('Workflow step deleted successfully')
     },
 
     onError: (error) => {
-      window.alert(extractErrorMessage(error))
+      toast.error('Workflow step deletion failed', extractErrorMessage(error))
     },
   })
 
@@ -2003,6 +1999,7 @@ function WorkflowsPage() {
 
       {definitionDialogOpen && (
         <DefinitionDialog
+          key={editingDefinition?.id ?? 'new'}
           definition={editingDefinition}
           isSubmitting={
             createDefinitionMutation.isPending ||
@@ -2017,6 +2014,7 @@ function WorkflowsPage() {
       {stepDialogOpen &&
         selectedDefinitionId !== null && (
           <StepDialog
+            key={`${selectedDefinitionId}:${editingStep?.id ?? 'new'}`}
             definitionId={selectedDefinitionId}
             step={editingStep}
             employees={
@@ -2036,3 +2034,4 @@ function WorkflowsPage() {
 }
 
 export default WorkflowsPage
+

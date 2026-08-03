@@ -19,6 +19,8 @@ final class InternalRequest extends Model
         'request_type_id',
         'workflow_definition_id',
         'requester_employee_id',
+        'created_by_user_id',
+        'on_behalf_of_reason',
         'current_workflow_step_id',
         'reference_number',
         'title',
@@ -37,6 +39,7 @@ final class InternalRequest extends Model
             'request_type_id' => 'integer',
             'workflow_definition_id' => 'integer',
             'requester_employee_id' => 'integer',
+            'created_by_user_id' => 'integer',
             'current_workflow_step_id' => 'integer',
             'payload' => 'array',
             'submitted_at' => 'datetime',
@@ -60,6 +63,9 @@ final class InternalRequest extends Model
                     [
                         'reference_number' => $internalRequest
                             ->reference_number,
+                        'created_by_user_id' => $internalRequest->created_by_user_id,
+                        'requester_employee_id' => $internalRequest->requester_employee_id,
+                        'on_behalf_of_reason' => $internalRequest->on_behalf_of_reason,
                     ]
                 );
             }
@@ -164,6 +170,11 @@ final class InternalRequest extends Model
             Employee::class,
             'requester_employee_id'
         );
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
     }
 
     public function currentWorkflowStep(): BelongsTo

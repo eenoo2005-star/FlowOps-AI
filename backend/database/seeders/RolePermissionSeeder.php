@@ -151,18 +151,21 @@ class RolePermissionSeeder extends Seeder
         $this->call(WorkflowTaskPermissionSeeder::class);
         $this->call(RequestCollaborationPermissionSeeder::class);
         $this->call(NotificationPermissionSeeder::class);
-        $systemAdmin = \Spatie\Permission\Models\Role::findOrCreate(
-    'system admin',
-    'web'
-);
+        $this->call(CompanyAdminOperationalPermissionSeeder::class);
+        $this->call(SystemAdminPermissionSeeder::class);
+        $this->call(EnterpriseAdministrationPermissionSeeder::class);
+        $systemAdmin = Role::findOrCreate(
+            'system_admin',
+            'web'
+        );
 
-$systemAdmin->syncPermissions(
-    \Spatie\Permission\Models\Permission::query()
-        ->where('guard_name', 'web')
-        ->get()
-);
+        $systemAdmin->syncPermissions(
+            Permission::query()
+                ->where('guard_name', 'web')
+                ->get()
+        );
 
-app(\Spatie\Permission\PermissionRegistrar::class)
-    ->forgetCachedPermissions();
+        app(PermissionRegistrar::class)
+            ->forgetCachedPermissions();
     }
 }

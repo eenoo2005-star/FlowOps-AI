@@ -58,7 +58,8 @@ final class InternalRequestController extends Controller
         return new InternalRequestResource(
             $internalRequest->load([
                 'requestType:id,name,code',
-                'requesterEmployee:id,first_name,last_name,employee_number',
+                'requesterEmployee:id,first_name,last_name,employee_number,user_id',
+                'creator:id,name,email',
                 'workflowDefinition:id,name,code,version',
                 'currentWorkflowStep:id,name,code,step_order',
 

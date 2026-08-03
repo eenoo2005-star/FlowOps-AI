@@ -19,6 +19,7 @@ import {
   X,
 } from 'lucide-react'
 import type { AxiosError } from 'axios'
+import { useToast } from '../components/feedback/toastContext'
 import { authService } from '../services/authService'
 import { approvalTaskService } from '../services/approvalTaskService'
 import type { ApprovalTask } from '../types/approvalTask'
@@ -55,6 +56,7 @@ function formatDate(value: string | null): string {
 }
 
 function ApprovalsPage() {
+  const toast = useToast()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -130,6 +132,14 @@ function ApprovalsPage() {
       setNote('')
       setActionError(null)
       await refresh(task.id)
+      toast.success(
+        'Request approved successfully',
+        'The approval decision was recorded.',
+      )
+      toast.success(
+        'Request approved successfully',
+        'The approval decision was recorded.',
+      )
     },
     onError: (error) =>
       setActionError(errorMessage(error)),
@@ -145,6 +155,14 @@ function ApprovalsPage() {
       setNote('')
       setActionError(null)
       await refresh(task.id)
+      toast.success(
+        'Request approved successfully',
+        'The approval decision was recorded.',
+      )
+      toast.success(
+        'Request approved successfully',
+        'The approval decision was recorded.',
+      )
     },
     onError: (error) =>
       setActionError(errorMessage(error)),

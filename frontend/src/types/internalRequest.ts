@@ -121,6 +121,8 @@ export interface InternalRequest {
   request_type_id: number
   workflow_definition_id: number
   requester_employee_id: number
+  created_by_user_id: number | null
+  on_behalf_of_reason: string | null
   current_workflow_step_id: number | null
   reference_number: string
   title: string
@@ -137,6 +139,7 @@ export interface InternalRequest {
     code: string
   } | null
   requester_employee: RequesterEmployee | null
+  created_by: { id: number; name: string; email: string } | null
   workflow_definition: InternalRequestWorkflow | null
   current_workflow_step: CurrentWorkflowStep | null
   workflow_instance: WorkflowInstance | null
@@ -147,6 +150,7 @@ export interface InternalRequest {
 export interface CreateInternalRequestPayload {
   request_type_id: number
   requester_employee_id: number | null
+  on_behalf_of_reason: string | null
   title: string
   description: string | null
   payload: Record<string, unknown> | null

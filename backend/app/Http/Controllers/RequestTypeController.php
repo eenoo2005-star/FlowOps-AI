@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateRequestTypeRequest;
 use App\Http\Resources\RequestTypeResource;
 use App\Models\RequestType;
 use App\Services\RequestTypeService;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
@@ -30,6 +31,20 @@ final class RequestTypeController extends Controller
             $this->service->paginate(
                 $request->validated()
             )
+        );
+    }
+
+    public function activeOptions(
+        Request $request
+    ): AnonymousResourceCollection {
+        abort_unless(
+            $request->user()?->can('request-types.view')
+                || $request->user()?->can('requests.create'),
+            403
+        );
+
+        return RequestTypeResource::collection(
+            $this->service->activeOptions()
         );
     }
 
