@@ -2,41 +2,63 @@
 
 **Enterprise Workflow / BPM / Operations Platform**
 
-FlowOps AI is a full-stack enterprise workflow management platform for internal company requests, approvals, notifications, analytics, permissions, and administration.
+FlowOps AI is a full-stack enterprise workflow platform for managing internal company requests, approval workflows, notifications, analytics, security monitoring, role-based access control, and administration.
 
-It was built as a production-quality portfolio project to demonstrate real business application engineering using Laravel, React, TypeScript, PostgreSQL, Redis, Docker, and role-based access control.
+It was built as a production-quality portfolio project to demonstrate real business application engineering using **Laravel, React, TypeScript, PostgreSQL, Redis, Docker, and enterprise permission design**.
 
-> Portfolio status: feature-complete for presentation. Future enterprise features are listed in the roadmap.
+---
+
+## Problem
+
+Many organizations still manage internal approvals through email, spreadsheets, chat messages, and manual follow-up.
+
+This creates several operational problems:
+
+- Requests get lost or delayed.
+- Approval responsibility is unclear.
+- Managers cannot easily see pending work.
+- Security and permissions are difficult to control.
+- There is limited visibility into request history, failed logins, workflow status, and operational performance.
+
+---
+
+## Solution
+
+FlowOps AI centralizes internal operations into one structured enterprise workspace.
+
+The platform allows employees to create internal requests, routes those requests through active workflows, generates approval tasks, notifies the right users, tracks request status, exposes analytics, and gives administrators visibility over roles, permissions, security events, and audit activity.
 
 ---
 
 ## Preview
 
+### Operations Dashboard
+
 ![FlowOps AI Dashboard](docs/assets/screenshots/01-dashboard-light.png)
 
-![FlowOps AI Internal Request Dialog](docs/assets/screenshots/04-create-request-dialog.png)
+### Create Request Workflow
 
-![FlowOps AI Administration](docs/assets/screenshots/08-administration.png)
+![FlowOps AI Create Request Dialog](docs/assets/screenshots/03-create-request-dialog.png)
 
----
+### Enterprise Administration
 
-## Demo Video
-
-Add the final 60–90 second demo video here after recording.
-
-Suggested filename:
-
-```text
-docs/assets/video/flowops-ai-demo.mp4
-```
+![FlowOps AI Administration](docs/assets/screenshots/04-administration-overview.png)
 
 ---
 
-## What FlowOps AI Does
+## Product Screens
 
-FlowOps AI helps organizations replace manual internal approval processes with a structured workflow system.
+### Security Monitoring
 
-Employees can create requests, workflows route those requests to the correct approvers, approvers approve or reject from their inbox, notifications keep users informed, and analytics give management operational visibility.
+![FlowOps AI Security Monitoring](docs/assets/screenshots/05-security-monitoring.png)
+
+### Request Workspace
+
+![FlowOps AI Request Workspace](docs/assets/screenshots/07-requests-workspace.png)
+
+### Approval Inbox
+
+![FlowOps AI Approval Inbox](docs/assets/screenshots/08-approval-inbox.png)
 
 ---
 
@@ -55,39 +77,38 @@ Employees can create requests, workflows route those requests to the correct app
 - SLA reminders and overdue escalation
 - Analytics dashboard
 - Workspace search
-- Security module
+- Security monitoring
+- Login attempt visibility
 - Enterprise administration
 - Roles and permissions
-- Audit logs
+- Audit visibility
 - Light and dark mode
 - Docker production setup
 - Health endpoint
 
 ---
 
-## Tech Stack
+## Technical Implementation
 
 ### Frontend
 
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- React Router
-- React Query
-- Framer Motion
-- Lucide Icons
+- **React + TypeScript** for a typed enterprise UI.
+- **Vite** for fast development and production builds.
+- **Tailwind CSS** for a polished design system.
+- **React Router** for workspace navigation.
+- **React Query** for API state, caching, loading states, and mutation handling.
+- **Framer Motion** for smooth page transitions.
+- **Lucide Icons** for consistent enterprise-style iconography.
 
 ### Backend
 
-- Laravel 12
-- PostgreSQL
-- Redis
-- Docker
-- Queue worker
-- Scheduler
-- JWT authentication
-- Spatie Permission
+- **Laravel 12** REST API.
+- **PostgreSQL** relational database.
+- **Redis** for queues and operational background work.
+- **Docker** for production-style local deployment.
+- **Spatie Permission** for role-based access control.
+- **JWT/Sanctum-style protected API access** depending on environment configuration.
+- Queue and scheduler-ready architecture for notifications, SLA reminders, and escalation flows.
 
 ---
 
@@ -102,7 +123,7 @@ PostgreSQL Database
         ↓
 Redis Queue / Scheduler
         ↓
-Notifications, SLA reminders, analytics and workflow automation
+Workflow automation, notifications, analytics and security visibility
 ```
 
 ---
@@ -127,16 +148,24 @@ Completed / Rejected
 
 ---
 
-## Enterprise Administration
+## Demo Video
 
-FlowOps AI includes an administration area for managing:
+A short 60–90 second demo video will be added after the final screen recording.
 
-- Roles
-- Permissions
-- Audit logs
-- System and workspace settings placeholders
+Suggested title:
 
-This demonstrates enterprise access-control thinking and prepares the project for larger SaaS-style expansion.
+```text
+FlowOps AI — Enterprise Workflow Platform Demo
+```
+
+The video will demonstrate:
+
+1. Dashboard and workspace navigation.
+2. Department and employee management.
+3. Internal request creation.
+4. Approval inbox and approve/reject flow.
+5. Notifications and security monitoring.
+6. Administration, roles, permissions, and audit visibility.
 
 ---
 
@@ -166,15 +195,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\portfolio\verify-por
 
 ---
 
-## Portfolio Notes
+## Engineering Value
 
-This project demonstrates:
+FlowOps AI demonstrates:
 
 - Full-stack product engineering
 - Enterprise workflow modeling
-- Permission-based system design
+- REST API design
+- Permission-based access control
+- Workflow state management
 - Frontend state management
-- Backend API development
 - Dockerized deployment
 - Debugging and production-readiness discipline
 - Professional documentation and presentation
@@ -183,7 +213,7 @@ This project demonstrates:
 
 ## Roadmap
 
-These features are intentionally kept as future scope so the portfolio version stays focused:
+The following features are intentionally kept as future scope so the portfolio release stays focused:
 
 - Advanced BPM
 - AI assistant
@@ -200,4 +230,4 @@ These features are intentionally kept as future scope so the portfolio version s
 
 **Shaheen Idris**  
 Software Engineer — Libya  
-Full-stack development, Laravel, React, TypeScript, Docker, PostgreSQL, enterprise systems, workflow automation.
+Laravel, React, TypeScript, PostgreSQL, Redis, Docker, enterprise systems, workflow automation.

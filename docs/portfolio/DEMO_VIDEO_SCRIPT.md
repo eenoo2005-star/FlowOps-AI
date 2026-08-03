@@ -1,50 +1,23 @@
-# FlowOps AI — 60–90 Second Demo Video Script
+# FlowOps AI — Demo Video Script
 
-## Target Length
+## Length
 
-60 to 90 seconds.
+60–90 seconds.
 
-## Recording Style
-
-- No long explanations.
-- Show the product working.
-- Move fast but not chaotic.
-- Use a clean browser window.
-- Use 1440 x 900 or 1920 x 1080.
-- Record in English if targeting international roles.
-
-## Voiceover Script
+## Voiceover
 
 FlowOps AI is an enterprise workflow and approval management platform built with Laravel, React, TypeScript, PostgreSQL, Redis, and Docker.
 
-It helps companies manage internal requests through departments, employees, request types, workflows, approvals, notifications, analytics, and administration.
+Many companies still manage internal approvals through email, spreadsheets, and manual follow-up. This causes delays, missing approvals, weak visibility, and unclear ownership.
 
-Here is the dashboard, with operational KPIs and quick navigation across the workspace.
+FlowOps AI solves this by centralizing request creation, workflow routing, approval tasks, notifications, analytics, security monitoring, and role-based administration in one workspace.
 
-Departments and employees can be managed from dedicated modules, with validation, loading states, and success notifications.
+Here is the operations dashboard. It gives a clear view of workspace status and quick access to enterprise modules.
 
-When an employee creates a request, FlowOps AI uses the active request type and linked workflow to generate the approval path.
+From the request workspace, an employee can create a request, select the correct request type, and submit it into a workflow.
 
-Approvers can review requests from the approval inbox, approve or reject them, and the request status updates automatically.
+The approval inbox allows approvers to review pending tasks, approve or reject decisions, and keep request status moving.
 
-The platform also includes notifications, workspace search, analytics, role and permission management, and audit logs.
+The platform also includes notifications, security monitoring, login attempt visibility, roles, permissions, and audit visibility.
 
-The backend is powered by Laravel, PostgreSQL, Redis queues, and Docker, while the frontend uses React, TypeScript, Tailwind, and React Query.
-
-FlowOps AI was built as a production-quality portfolio project to demonstrate full-stack enterprise application development.
-
-## Recording Timeline
-
-0–5 sec: show dashboard hero.
-
-5–15 sec: navigate through Departments and Employees.
-
-15–30 sec: open Create Request.
-
-30–45 sec: open Approval Inbox and approve or reject.
-
-45–60 sec: show Notifications and Analytics.
-
-60–75 sec: show Administration, roles, permissions, and audit logs.
-
-75–90 sec: return to dashboard and end.
+FlowOps AI was built as a production-quality portfolio project to demonstrate full-stack enterprise application development and real business workflow engineering.
