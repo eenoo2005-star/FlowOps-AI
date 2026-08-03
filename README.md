@@ -4,7 +4,7 @@
 
 FlowOps AI is a full-stack enterprise workflow platform for managing internal company requests, approval workflows, notifications, analytics, security monitoring, role-based access control, and administration.
 
-It was built as a production-quality portfolio project to demonstrate real business application engineering using **Laravel, React, TypeScript, PostgreSQL, Redis, Docker, and enterprise permission design**.
+Built as a production-quality portfolio project using **Laravel, React, TypeScript, PostgreSQL, Redis, Docker, and enterprise permission design**.
 
 ---
 
@@ -12,13 +12,13 @@ It was built as a production-quality portfolio project to demonstrate real busin
 
 Many organizations still manage internal approvals through email, spreadsheets, chat messages, and manual follow-up.
 
-This creates several operational problems:
+This creates operational problems:
 
 - Requests get lost or delayed.
-- Approval responsibility is unclear.
+- Approval ownership is unclear.
 - Managers cannot easily see pending work.
 - Security and permissions are difficult to control.
-- There is limited visibility into request history, failed logins, workflow status, and operational performance.
+- Request history, failed logins, workflow status, and performance are hard to monitor.
 
 ---
 
@@ -26,7 +26,22 @@ This creates several operational problems:
 
 FlowOps AI centralizes internal operations into one structured enterprise workspace.
 
-The platform allows employees to create internal requests, routes those requests through active workflows, generates approval tasks, notifies the right users, tracks request status, exposes analytics, and gives administrators visibility over roles, permissions, security events, and audit activity.
+Employees can create requests, the system routes them through active workflows, approval tasks are generated automatically, approvers make decisions from their inbox, notifications keep users informed, and administrators get visibility into roles, permissions, security, and audit activity.
+
+---
+
+## Live Demo
+
+A public demo account will be added after production hosting is configured.
+
+```text
+Status: Private repository / local Docker demo
+Public demo URL: Coming soon
+Demo email: demo@flowops.test
+Demo password: Will be published only after deployment
+```
+
+The demo account will use limited permissions and fake data only.
 
 ---
 
@@ -40,25 +55,42 @@ The platform allows employees to create internal requests, routes those requests
 
 ![FlowOps AI Create Request Dialog](docs/assets/screenshots/03-create-request-dialog.png)
 
-### Enterprise Administration
-
-![FlowOps AI Administration](docs/assets/screenshots/04-administration-overview.png)
-
----
-
-## Product Screens
-
-### Security Monitoring
-
-![FlowOps AI Security Monitoring](docs/assets/screenshots/05-security-monitoring.png)
-
 ### Request Workspace
 
-![FlowOps AI Request Workspace](docs/assets/screenshots/07-requests-workspace.png)
+![FlowOps AI Request Workspace](docs/assets/screenshots/04-requests-workspace.png)
 
 ### Approval Inbox
 
-![FlowOps AI Approval Inbox](docs/assets/screenshots/08-approval-inbox.png)
+![FlowOps AI Approval Inbox](docs/assets/screenshots/05-approval-inbox.png)
+
+### Enterprise Administration
+
+![FlowOps AI Administration](docs/assets/screenshots/06-administration-overview.png)
+
+### Security Monitoring
+
+![FlowOps AI Security Monitoring](docs/assets/screenshots/07-security-monitoring.png)
+
+### Departments
+
+![FlowOps AI Departments](docs/assets/screenshots/08-departments.png)
+
+### Employees
+
+![FlowOps AI Employees](docs/assets/screenshots/09-employees.png)
+
+### Notifications
+
+![FlowOps AI Notifications](docs/assets/screenshots/10-notifications.png)
+
+---
+
+## Screenshots Still To Add Before Public Release
+
+The following screens are part of the system but still need final clean screenshots:
+
+- Workflow Builder
+- Request Types configuration
 
 ---
 
@@ -94,9 +126,9 @@ The platform allows employees to create internal requests, routes those requests
 
 - **React + TypeScript** for a typed enterprise UI.
 - **Vite** for fast development and production builds.
-- **Tailwind CSS** for a polished design system.
+- **Tailwind CSS** for a custom visual system.
 - **React Router** for workspace navigation.
-- **React Query** for API state, caching, loading states, and mutation handling.
+- **React Query** for server state, caching, loading states, and mutation handling.
 - **Framer Motion** for smooth page transitions.
 - **Lucide Icons** for consistent enterprise-style iconography.
 
@@ -104,10 +136,10 @@ The platform allows employees to create internal requests, routes those requests
 
 - **Laravel 12** REST API.
 - **PostgreSQL** relational database.
-- **Redis** for queues and operational background work.
+- **Redis** for queues and background work.
 - **Docker** for production-style local deployment.
 - **Spatie Permission** for role-based access control.
-- **JWT/Sanctum-style protected API access** depending on environment configuration.
+- Protected API access for authenticated users.
 - Queue and scheduler-ready architecture for notifications, SLA reminders, and escalation flows.
 
 ---
@@ -145,27 +177,6 @@ Approve / Reject
   ↓
 Completed / Rejected
 ```
-
----
-
-## Demo Video
-
-A short 60–90 second demo video will be added after the final screen recording.
-
-Suggested title:
-
-```text
-FlowOps AI — Enterprise Workflow Platform Demo
-```
-
-The video will demonstrate:
-
-1. Dashboard and workspace navigation.
-2. Department and employee management.
-3. Internal request creation.
-4. Approval inbox and approve/reject flow.
-5. Notifications and security monitoring.
-6. Administration, roles, permissions, and audit visibility.
 
 ---
 
