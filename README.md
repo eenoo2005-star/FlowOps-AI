@@ -249,3 +249,5 @@ The following features are intentionally kept as future scope so the portfolio r
 **Shaheen Idris**  
 Software Engineer — Libya  
 Laravel, React, TypeScript, PostgreSQL, Redis, Docker, enterprise systems, workflow automation.
+
+<!-- Public portfolio refresh: 2026-08-03 16:48:03 -->
