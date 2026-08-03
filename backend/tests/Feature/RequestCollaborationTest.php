@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Tests\Feature;
 
@@ -254,8 +254,10 @@ final class RequestCollaborationTest extends TestCase
                 'request_type_id' => $requestType->id,
                 'workflow_definition_id' => $workflow->id,
                 'requester_employee_id' => $employee->id,
+                'on_behalf_of_reason' => 'Automated test fixture: administrator creates this request on behalf of the requester.',
             ]);
 
         return [$user, $internalRequest];
     }
 }
+

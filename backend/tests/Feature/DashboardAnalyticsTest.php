@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Tests\Feature;
 
@@ -354,6 +354,7 @@ final class DashboardAnalyticsTest extends TestCase
             'request_type_id' => $requestTypeId,
             'workflow_definition_id' => $workflowId,
             'requester_employee_id' => $requesterId,
+            'on_behalf_of_reason' => 'Automated test fixture: administrator creates this request on behalf of the requester.',
             'status' => $status,
             'submitted_at' => $submittedAt,
             'completed_at' => $completedAt,
@@ -361,3 +362,4 @@ final class DashboardAnalyticsTest extends TestCase
         ]);
     }
 }
+

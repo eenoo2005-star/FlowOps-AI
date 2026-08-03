@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Tests\Feature;
 
@@ -137,6 +137,7 @@ final class InternalRequestEngineTest extends TestCase
             ->postJson('/api/internal-requests', [
                 'request_type_id' => $requestType->id,
                 'requester_employee_id' => $requester->id,
+                'on_behalf_of_reason' => 'Automated test fixture: administrator creates this request on behalf of the requester.',
                 'title' => 'Annual leave for three days',
                 'description' => 'Personal leave request.',
                 'priority' => 'normal',
@@ -228,6 +229,7 @@ final class InternalRequestEngineTest extends TestCase
             'request_type_id' => $requestType->id,
             'workflow_definition_id' => $workflow->id,
             'requester_employee_id' => $employee->id,
+            'on_behalf_of_reason' => 'Automated test fixture: administrator creates this request on behalf of the requester.',
         ]);
 
         InternalRequest::factory()->create([
@@ -235,6 +237,7 @@ final class InternalRequestEngineTest extends TestCase
             'request_type_id' => $requestType->id,
             'workflow_definition_id' => $workflow->id,
             'requester_employee_id' => $otherEmployee->id,
+            'on_behalf_of_reason' => 'Automated test fixture: administrator creates this request on behalf of the requester.',
         ]);
 
         Sanctum::actingAs($user, ['*']);
@@ -287,6 +290,7 @@ final class InternalRequestEngineTest extends TestCase
             ->postJson('/api/internal-requests', [
                 'request_type_id' => $requestType->id,
                 'requester_employee_id' => $requester->id,
+                'on_behalf_of_reason' => 'Automated test fixture: administrator creates this request on behalf of the requester.',
                 'title' => 'Test request',
                 'priority' => 'normal',
             ])
@@ -304,3 +308,4 @@ final class InternalRequestEngineTest extends TestCase
             ]);
     }
 }
+

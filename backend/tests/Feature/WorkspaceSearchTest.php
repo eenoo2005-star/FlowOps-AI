@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Tests\Feature;
 
@@ -175,6 +175,7 @@ final class WorkspaceSearchTest extends TestCase
                 'request_type_id' => $requestType->id,
                 'workflow_definition_id' => $workflow->id,
                 'requester_employee_id' => $ownEmployee->id,
+                'on_behalf_of_reason' => 'Automated test fixture: administrator creates this request on behalf of the requester.',
                 'title' => 'Needle budget request',
             ]);
 
@@ -183,6 +184,7 @@ final class WorkspaceSearchTest extends TestCase
             'request_type_id' => $requestType->id,
             'workflow_definition_id' => $workflow->id,
             'requester_employee_id' => $otherEmployee->id,
+            'on_behalf_of_reason' => 'Automated test fixture: administrator creates this request on behalf of the requester.',
             'title' => 'Needle budget request',
         ]);
 
@@ -231,3 +233,4 @@ final class WorkspaceSearchTest extends TestCase
         );
     }
 }
+

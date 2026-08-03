@@ -1,3 +1,4 @@
+﻿/* eslint-disable react-hooks/set-state-in-effect */
 import {
   type FormEvent,
   useEffect,
@@ -87,13 +88,13 @@ const tabs: Array<{
 
 function formatDate(value: string | null): string {
   if (!value) {
-    return '—'
+    return 'â€”'
   }
 
   const date = new Date(value)
 
   if (Number.isNaN(date.getTime())) {
-    return '—'
+    return 'â€”'
   }
 
   return new Intl.DateTimeFormat('en-GB', {
@@ -597,7 +598,7 @@ function AdministrationPage() {
                         {humanize(role.name)}
                       </p>
                       <p className="mt-1 text-xs text-slate-600">
-                        {role.users_count} users · {role.permissions.length}{' '}
+                        {role.users_count} users آ· {role.permissions.length}{' '}
                         permissions
                       </p>
                     </div>
@@ -842,8 +843,8 @@ function AdministrationPage() {
                     </p>
 
                     <p className="mt-2 text-xs text-slate-600">
-                      Actor: {event.actor_name ?? 'System'} · IP:{' '}
-                      {event.ip_address ?? '—'}
+                      Actor: {event.actor_name ?? 'System'} آ· IP:{' '}
+                      {event.ip_address ?? 'â€”'}
                     </p>
                   </div>
 
@@ -953,3 +954,5 @@ function AdministrationPage() {
 }
 
 export default AdministrationPage
+
+

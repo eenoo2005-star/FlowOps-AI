@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Tests\Feature;
 
@@ -58,6 +58,7 @@ final class ApprovalActionsEngineTest extends TestCase
         $draft = $this->postJson('/api/internal-requests', [
             'request_type_id' => $requestType->id,
             'requester_employee_id' => $requester->id,
+            'on_behalf_of_reason' => 'Automated test fixture: administrator creates this request on behalf of the requester.',
             'title' => 'Annual leave request',
             'priority' => 'normal',
         ])->assertSuccessful();
@@ -114,6 +115,7 @@ final class ApprovalActionsEngineTest extends TestCase
         $draft = $this->postJson('/api/internal-requests', [
             'request_type_id' => $requestType->id,
             'requester_employee_id' => $requester->id,
+            'on_behalf_of_reason' => 'Automated test fixture: administrator creates this request on behalf of the requester.',
             'title' => 'Request to reject',
             'priority' => 'normal',
         ])->assertSuccessful();
@@ -158,6 +160,7 @@ final class ApprovalActionsEngineTest extends TestCase
         $draft = $this->postJson('/api/internal-requests', [
             'request_type_id' => $requestType->id,
             'requester_employee_id' => $requester->id,
+            'on_behalf_of_reason' => 'Automated test fixture: administrator creates this request on behalf of the requester.',
             'title' => 'Protected request',
             'priority' => 'normal',
         ])->assertSuccessful();
@@ -245,3 +248,4 @@ final class ApprovalActionsEngineTest extends TestCase
         ];
     }
 }
+

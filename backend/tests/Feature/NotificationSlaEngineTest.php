@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Tests\Feature;
 
@@ -244,6 +244,7 @@ final class NotificationSlaEngineTest extends TestCase
                 'request_type_id' => $requestType->id,
                 'workflow_definition_id' => $workflow->id,
                 'requester_employee_id' => $requester->id,
+                'on_behalf_of_reason' => 'Automated test fixture: administrator creates this request on behalf of the requester.',
                 'current_workflow_step_id' => $step->id,
                 'status' => 'in_review',
                 'submitted_at' => now(),
@@ -271,3 +272,4 @@ final class NotificationSlaEngineTest extends TestCase
         return [$user, $task];
     }
 }
+
